@@ -1,0 +1,21 @@
+{
+    "name": "pdf-to-code",
+    "version": "0.1.0",
+    "description": "Editable multi-page PDF-to-HTML editor with export and table extraction utilities.",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "dompurify": "^2.4.0",
+        "html2pdf.js": "^0.9.3",
+        "jquery": "^3.6.0",
+        "pdfjs-dist": "^2.16.105"
+    },
+    "devDependencies": {
+        "vite": "^5.0.0"
+    }
+}

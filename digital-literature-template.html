@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Website Converter</title>
+  <style>
+    :root {
+      --toolbar-height: 56px;
+      --padding: 18px;
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial
+    }
+
+    body {
+      margin: 0;
+      background: #f4f6f8;
+      color: #111;
+      font-family: var(--padding)
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 18px;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+      position: sticky;
+      top: 0;
+      z-index: 100
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .toolbar button,
+    .toolbar select,
+    .toolbar input[type=file] {
+      height: 36px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      background: #fff;
+      cursor: pointer
+    }
+
+    main {
+      padding: 22px;
+      max-width: 960px;
+      margin: 0 auto
+    }
+
+    .page {
+      min-height: 1100px;
+      background: #fff;
+      padding: 28px;
+      border-radius: 8px;
+      border: 1px solid #e6e9ee;
+      box-shadow: 0 6px 20px rgba(16, 24, 40, .04);
+      margin-bottom: 40px;
+      position: relative;
+      display: none
+    }
+
+    .page.active {
+      display: block
+    }
+
+    .page:focus {
+      outline: 3px solid rgba(59, 130, 246, .12)
+    }
+
+    .two-column {
+      column-count: 2;
+      column-gap: 32px
+    }
+
+    .no-break {
+      break-inside: avoid-page;
+      page-break-inside: avoid
+    }
+
+    img {
+      max-width: 100%;
+      height: auto
+    }
+
+    .page-number {
+      position: absolute;
+      bottom: 10px;
+      right: 20px;
+      color: #666;
+      font-size: 12px
+    }
+
+    .nav-menu {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      flex-wrap: wrap
+    }
+
+    .nav-menu button,
+    .nav-menu select {
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      background: #fff;
+      cursor: pointer
+    }
+
+    footer {
+      padding: 20px;
+      text-align: center;
+      color: #666
+    }
+
+    @media print {
+      body {
+        background: transparent
+      }
+
+      header,
+      footer,
+      .controls-hide,
+      .nav-menu {
+        display: none
+      }
+
+      .page {
+        box-shadow: none;
+        border: none;
+        margin: 0 0 20px 0;
+        padding: 20px;
+        page-break-after: always;
+        display: block !important
+      }
+
+      .page-number {
+        display: block
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div style="display:flex;align-items:center;gap:14px">
+      <strong>Website Development Template</strong>
+      <small style="color:#666">Multi-page with jump-to-page dropdown</small>
+    </div>
+
+    <div class="toolbar" style="margin-left:auto">
+      <button onclick="exec('bold')" title="Bold"><b>B</b></button>
+      <button onclick="exec('italic')" title="Italic"><i>I</i></button>
+      <button onclick="exec('underline')" title="Underline"><u>U</u></button>
+      <button onclick="exec('insertUnorderedList')" title="Bullets">• List</button>
+      <button onclick="exec('insertOrderedList')" title="Numbered">1. List</button>
+      <select onchange="exec('formatBlock', this.value)">
+        <option value="">Normal</option>
+        <option value="h1">Heading 1</option>
+        <option value="h2">Heading 2</option>
+        <option value="h3">Heading 3</option>
+      </select>
+      <input type="file" accept="image/*" onchange="insertImage(event)" title="Insert image" />
+      <button onclick="toggleColumns()" title="Toggle two-column">2-col</button>
+      <button onclick="addPage()" title="Add a new page">+ Page</button>
+      <button onclick="downloadHTML('page.html')" title="Download as static HTML">Download .html</button>
+      <button onclick="downloadPHP()" title="Download site as .php">Download .php</button>
+      <button onclick="printPage()" title="Print (Save as PDF)">Print as PDF</button>
+      <button id="exportPdfBtn" onclick="exportPDF()" title="Export PDF (html2pdf)">Export PDF</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="pages">
+      <div class="page active" contenteditable="true" spellcheck="true">
+        <h1 style="text-align:center">Your Page Title</h1>
+        <p class="no-break">This is Page 1. Edit text, insert lists and images. Use the toolbar above. You can add more
+          pages with the "+ Page" button.</p>
+        <div class="page-number"></div>
+      </div>
+    </div>
+
+    <div class="nav-menu">
+      <button onclick="prevPage()">⟨ Prev</button>
+      <span id="nav-status">Page 1 of 1</span>
+      <button onclick="nextPage()">Next ⟩</button>
+      <select id="pageJump" onchange="jumpToPage(this.value)"></select>
+    </div>
+  </main>
+
+  <footer>Use "+ Page" to add multiple pages. Navigate with Prev/Next or jump directly using the dropdown. Page numbers
+    update automatically.</footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+  <script>
+    let currentPage = 0
+    let observer = null
+
+    function exec(cmd, val = null) {
+      document.execCommand(cmd, false, val)
+      document.activeElement.focus()
+    }
+
+    function insertImage(e) {
+      const file = e.target.files[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        const img = document.createElement('img')
+        img.src = reader.result
+        img.alt = file.name
+        document.activeElement.appendChild(img)
+      }
+      reader.readAsDataURL(file)
+      e.target.value = ''
+    }
+
+    function toggleColumns() {
+      const sel = window.getSelection()
+      if (sel.rangeCount) {
+        const range = sel.getRangeAt(0)
+        let el = range.startContainer.parentNode
+        while (el && !el.classList.contains('page')) el = el.parentNode
+        if (el) {
+          el.classList.toggle('two-column')
+        }
+      }
+    }
+
+    function addPage() {
+      const pages = document.getElementById('pages')
+      const newPage = document.createElement('div')
+      newPage.className = 'page'
+      newPage.contentEditable = true
+      newPage.spellcheck = true
+      newPage.innerHTML = '<h2 style="text-align:center">New Page</h2><p>Start typing...</p><div class="page-number"></div>'
+      pages.appendChild(newPage)
+      updatePageNumbers()
+      showPage(document.querySelectorAll('.page').length - 1)
+    }
+
+    function updatePageNumbers() {
+      // prevent observer feedback loop by disconnecting while we modify the DOM
+      if (observer) observer.disconnect()
+
+      const pages = document.querySelectorAll('.page')
+      pages.forEach((page, i) => {
+        const pn = page.querySelector('.page-number')
+        if (pn) {
+          const text = `Page ${i + 1} of ${pages.length}`
+          if (pn.textContent !== text) pn.textContent = text
+        }
+      })
+
+      document.getElementById('nav-status').textContent = `Page ${currentPage + 1} of ${pages.length}`
+
+      const dropdown = document.getElementById('pageJump')
+      dropdown.innerHTML = ''
+      pages.forEach((p, i) => {
+        const opt = document.createElement('option')
+        opt.value = i
+        opt.textContent = `Go to Page ${i + 1}`
+        if (i === currentPage) opt.selected = true
+        dropdown.appendChild(opt)
+      })
+
+      // reconnect observer after updates
+      if (observer) observer.observe(document.getElementById('pages'), { childList: true, subtree: true })
+    }
+
+    function showPage(index) {
+      const pages = document.querySelectorAll('.page')
+      if (index < 0 || index >= pages.length) return
+      pages.forEach((p, i) => p.classList.toggle('active', i === index))
+      currentPage = index
+      updatePageNumbers()
+    }
+
+    function prevPage() {
+      showPage(currentPage - 1)
+    }
+
+    function nextPage() {
+      showPage(currentPage + 1)
+    }
+
+    function jumpToPage(i) {
+      showPage(parseInt(i))
+    }
+
+    function printPage() {
+      updatePageNumbers()
+      window.print()
+    }
+
+    async function exportPDF() {
+      updatePageNumbers()
+      const opt = {
+        margin: 10,
+        filename: 'website-export.pdf',
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }
+      const wrapper = document.getElementById('pages').cloneNode(true)
+      wrapper.querySelectorAll('.page').forEach(p => p.style.display = 'block')
+      html2pdf().set(opt).from(wrapper).save()
+    }
+
+    function downloadHTML(filename = 'page.html') {
+      updatePageNumbers()
+      const doc = `<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Export</title></head><body>${document.getElementById('pages').innerHTML}</body></html>`
+      const blob = new Blob([doc], { type: 'text/html' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(a.href)
+    }
+
+    function downloadPHP() {
+      updatePageNumbers()
+      const php = `<?php\\nheader('Content-Type: text/html; charset=utf-8');\\n?>\\n<!doctype html>\\n<html lang=\\"en\\">\\n<head><meta charset=\\"utf-8\\"><meta name=\\"viewport\\" content=\\"width=device-width,initial-scale=1\\"><title>Exported Page</title></head><body>${document.getElementById('pages').innerHTML}</body></html>`
+      const blob = new Blob([php], { type: 'application/x-php' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = 'exported-page.php'
+      a.click()
+      URL.revokeObjectURL(a.href)
+    }
+
+    // single observer instance
+    observer = new MutationObserver(updatePageNumbers)
+    observer.observe(document.getElementById('pages'), { childList: true, subtree: true })
+
+    updatePageNumbers()
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Website Converter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <div style="display:flex;align-items:center;gap:14px">
+            <strong>Website Development Template</strong>
+            <small style="color:#666">Multi-page with jump-to-page dropdown</small>
+        </div>
+
+        <div class="toolbar" style="margin-left:auto">
+            <button onclick="exec('bold')" title="Bold"><b>B</b></button>
+            <button onclick="exec('italic')" title="Italic"><i>I</i></button>
+            <button onclick="exec('underline')" title="Underline"><u>U</u></button>
+            <button onclick="exec('insertUnorderedList')" title="Bullets">• List</button>
+            <button onclick="exec('insertOrderedList')" title="Numbered">1. List</button>
+            <select onchange="exec('formatBlock', this.value)">
+                <option value="">Normal</option>
+                <option value="h1">Heading 1</option>
+                <option value="h2">Heading 2</option>
+                <option value="h3">Heading 3</option>
+            </select>
+            <input type="file" accept="application/pdf" onchange="renderPDF(event)">
+            <button onclick="toggleColumns()" title="Toggle two-column">2-col</button>
+            <button onclick="addPage()" title="Add a new page">+ Page</button>
+            <button onclick="downloadHTML('page.html')" title="Download as static HTML">Download .html</button>
+            <button onclick="downloadPHP()" title="Download site as .php">Download .php</button>
+            <button onclick="printPage()" title="Print (Save as PDF)">Print as PDF</button>
+            <button id="exportPdfBtn" onclick="exportPDF()" title="Export PDF (html2pdf)">Export PDF</button>
+        </div>
+    </header>
+
+    <main>
+        <div id="pages">
+            <div class="page active" contenteditable="true" spellcheck="true">
+                <h1 style="text-align:center">Your Page Title</h1>
+                <p class="no-break">This is Page 1. Edit text, insert lists and images. Use the toolbar above. You can
+                    add more
+                    pages with the "+ Page" button.</p>
+                <div class="page-number"></div>
+            </div>
+        </div>
+
+        <div class="nav-menu">
+            <button onclick="prevPage()">⟨ Prev</button>
+            <span id="nav-status">Page 1 of 1</span>
+            <button onclick="nextPage()">Next ⟩</button>
+            <select id="pageJump" onchange="jumpToPage(this.value)"></select>
+        </div>
+    </main>
+
+    <footer>Use "+ Page" to add multiple pages. Navigate with Prev/Next or jump directly using the dropdown. Page
+        numbers
+        update automatically.</footer>
+
+    <script type="module" src="./app.js"></script>
+</body>
+
+</html>
