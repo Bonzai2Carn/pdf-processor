@@ -36,7 +36,12 @@
             <button id="exportPdfBtn" onclick="exportPDF()" title="Export PDF (html2pdf)">Export PDF</button>
         </div>
     </header>
-
+    <div class="nav-menu">
+        <button onclick="prevPage()">⟨ Prev</button>
+        <span id="nav-status">Page 1 of 1</span>
+        <button onclick="nextPage()">Next ⟩</button>
+        <select id="pageJump" onchange="jumpToPage(this.value)"></select>
+    </div>
     <main>
         <div id="pages">
             <div class="page active" contenteditable="true" spellcheck="true">
@@ -48,12 +53,6 @@
             </div>
         </div>
 
-        <div class="nav-menu">
-            <button onclick="prevPage()">⟨ Prev</button>
-            <span id="nav-status">Page 1 of 1</span>
-            <button onclick="nextPage()">Next ⟩</button>
-            <select id="pageJump" onchange="jumpToPage(this.value)"></select>
-        </div>
     </main>
 
     <footer>Use "+ Page" to add multiple pages. Navigate with Prev/Next or jump directly using the dropdown. Page

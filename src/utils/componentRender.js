@@ -24,15 +24,13 @@ function exec(cmd, val = null) {
 // }
 
 function toggleColumns() {
-    const sel = window.getSelection()
-    if (sel.rangeCount) {
-        const range = sel.getRangeAt(0)
-        let el = range.startContainer.parentNode
-        while (el && !el.classList.contains('page')) el = el.parentNode
-        if (el) {
-            el.classList.toggle('two-column')
-        }
-    }
+    // Apply a two-column layout to the active page (or first page if none active)
+    const active = document.querySelector('.page.active') || document.querySelector('.page')
+    if (!active) return
+    // Set column-count via inline style for broad browser support
+    active.style.columnCount = '2'
+    active.style.WebkitColumnCount = '2'
+    active.style.MozColumnCount = '2'
 }
 
 function insertImage(e) {

@@ -1,443 +1,232 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import 'pdfjs-dist/build/pdf.worker.entry';
-// import { text } from 'stream/consumers';
 
 // Set the worker source
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.entry.js';
-class PDFRenderer {
-    constructor() {
-        this.pageContents = [];
-    }
-    async renderPDF(file) {
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            const numPages = pdfDoc.numPages;
-            const pagesContainer = document.getElementById('pages');
 
-            // Clear existing pages except first
-            while (pagesContainer.children.length >= 1) {
-                pagesContainer.removeChild(pagesContainer.lastChild);
-            }
+async function extractPageText(page) {
+    const textContent = await page.getTextContent();
+    const textItems = textContent.items.map(item => item.str).join(' ');
+    return textItems;
+}
 
-            for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-                const page = await this.processPage(pdfDoc, pageNum);
-                pagesContainer.appendChild(page);
-            }
+async function renderPDF(file) {
+    try {
+        console.log('Rendering PDF:', file);
 
-            return numPages;
-        } catch (error) {
-            console.error('PDF Rendering Error:', error);
-            throw error;
+        const arrayBuffer = await file.arrayBuffer();
+        console.log('Array Buffer:', arrayBuffer);
+
+        const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        console.log('PDF Document:', pdfDoc);
+
+        const numPages = pdfDoc.numPages;
+        const pagesContainer = document.getElementById('pages');
+
+        // Keep the first page, remove others
+        while (pagesContainer.children.length > 1) {
+            pagesContainer.removeChild(pagesContainer.lastChild);
         }
-    }
 
-    async processPage(pdfDoc, pageNum) {
-        const page = await pdfDoc.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1.5 });
-        // Create main page div (overlay-only, no canvas)
-        const pageDiv = document.createElement('div');
-        pageDiv.className = 'page';
-        pageDiv.spellcheck = true;
-        pageDiv.style.width = `${viewport.width}px`;
-        pageDiv.style.minHeight = `${viewport.height}px`;
-        pageDiv.style.position = 'relative';
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+            const page = await pdfDoc.getPage(pageNum);
 
-        // Extract text content and create a flowing, editable overlay (no canvas background)
-        const textContent = await page.getTextContent({ normalizeWhitespace: true });
-        const overlay = this.createFlowOverlay(textContent, viewport);
+            // Extract text content
+            const viewport = page.getViewport({ scale: 1.5 });
+            const textContent = await page.getTextContent();
 
-        // Extract images (we'll append them into the overlay but not rely on canvas positions)
-        const images = await this.extractImages(page, viewport);
-        if (images && images.length) images.forEach(img => overlay.appendChild(img));
+            // We'll use the canvas as a placeholder/container and mark the active page.
+            const canvas = document.createElement('canvas');
+            canvas.className = 'pdf-canvas';
+            canvas.dataset.pageNumber = pageNum;
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
 
-        pageDiv.appendChild(overlay);
+            // Mark the first page (or whatever page should be active) for styling/interaction
+            if (pageNum === 1) {
+                canvas.classList.add('active');
+            }
 
-        // Add page number
-        const pageNumberDiv = document.createElement('div');
-        pageNumberDiv.className = 'page-number';
-        pageNumberDiv.textContent = `Page ${pageNum}`;
-        pageDiv.appendChild(pageNumberDiv);
+            const pageDiv = document.createElement('div');
+            pageDiv.className = 'page';
+            pageDiv.contentEditable = true;
+            pageDiv.spellcheck = true;
+            pageDiv.style.position = 'relative';
+            pageDiv.style.width = `${viewport.width}px`;
+            pageDiv.style.height = `${viewport.height}px`;
 
-        return pageDiv;
-    }
+            // Create a text layer and position each text item absolutely to keep layout & casing
+            const textLayer = document.createElement('div');
+            textLayer.className = 'textLayer';
+            textLayer.style.position = 'absolute';
+            textLayer.style.left = '0';
+            textLayer.style.top = '0';
+            textLayer.contentEditable = true;
+            textLayer.spellcheck = true;
+            textLayer.style.width = `${viewport.width}px`;
+            textLayer.style.height = `${viewport.height}px`;
+            textLayer.style.pointerEvents = 'auto';
+            textLayer.style.overflow = 'visible';
 
-    createTextLayer(textContent, viewport) {
-        const textLayerDiv = document.createElement('div');
-        textLayerDiv.style.position = 'absolute';
-        textLayerDiv.style.top = '0';
-        textLayerDiv.style.left = '0';
-        textLayerDiv.style.width = `${viewport.width}px`;
-        textLayerDiv.style.height = `${viewport.height}px`;
-        textLayerDiv.style.pointerEvents = 'none';
+            // Convert raw items into positioned spans
+            const positionedItems = textContent.items.map(item => {
+                // convert PDF text coordinates to viewport coordinates
+                const [x, y] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
+                // approximate font size from transform matrix
+                const fontSize = Math.hypot(item.transform[0], item.transform[1]) * viewport.scale;
+                // font info if available
+                const style = textContent.styles && textContent.styles[item.fontName] ? textContent.styles[item.fontName] : {};
+                return {
+                    str: item.str,
+                    x,
+                    y,
+                    fontSize,
+                    fontFamily: style.fontFamily || 'sans-serif',
+                    fontName: item.fontName
+                };
+            });
 
-        textContent.items.forEach(item => {
-            const span = document.createElement('p');
-            const transform = pdfjsLib.Util.transform(
-                viewport.transform,
-                item.transform
-            );
-            span.style.position = 'absolute';
-            span.style.left = `${transform[4]}px`;
-            span.style.top = `${transform[5]}px`;
-            span.style.fontSize = `${viewport.height}px`;
-            span.textContent = item.str;
-            textLayerDiv.appendChild(span);
-        });
+            // Helper: cluster rows by Y (small tolerance) to detect lines/rows
+            function clusterByY(items, tol = 6) {
+                const rows = [];
+                items.forEach(it => {
+                    const found = rows.find(r => Math.abs(r.y - it.y) <= tol);
+                    if (found) {
+                        found.items.push(it);
+                        // keep representative y (average)
+                        found.y = (found.y * (found.items.length - 1) + it.y) / found.items.length;
+                    } else {
+                        rows.push({ y: it.y, items: [it] });
+                    }
+                });
+                // sort rows top-to-bottom
+                rows.sort((a, b) => a.y - b.y);
+                // sort items in row left-to-right
+                rows.forEach(r => r.items.sort((a, b) => a.x - b.x));
+                return rows;
+            }
 
-        return textLayerDiv;
-    }
+            const rows = clusterByY(positionedItems);
 
-    // Create a flowing, editable overlay (not absolutely positioned spans) so text can wrap around images.
-    createFlowOverlay(textContent, viewport) {
-        const overlay = document.createElement('div');
-        overlay.className = 'pdf-flow-overlay';
-        overlay.contentEditable = true;
-        overlay.spellcheck = true;
-        // overlay.style.position = 'absolute';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = `${viewport.width}px`;
-        overlay.style.minHeight = `${viewport.height}px`;
-        overlay.style.pointerEvents = 'auto';
-        overlay.style.background = 'transparent';
-        overlay.style.whiteSpace = 'normal';
-        overlay.style.padding = '12px';
-        overlay.style.boxSizing = 'border-box';
+            // Basic table detection: consistent column x positions across multiple rows
+            function detectTable(rows, columnTolerance = 8) {
+                if (rows.length < 2) return null;
 
-        // GRID layout (avoid left/right median splitting). Default columns comes from this.columns
-        const cols = (this.columns && Number(this.columns) > 0) ? Number(this.columns) : 1;
-        overlay.style.display = 'grid';
-        overlay.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-        overlay.style.gap = '16px';
+                // Build dynamic columns by assigning each item to the nearest existing column
+                const columns = [];
+                const usage = [];
 
-        // Convert textContent.items into lightweight items with coordinates & font info
-        const items = textContent.items.map(item => {
-            const t = item.transform || [];
-            const transform = pdfjsLib.Util.transform(viewport.transform, item.transform || [1, 0, 0, 1, 0, 0]);
-            return {
-                str: item.str || '',
-                x: transform[4] || 0,
-                y: transform[5] || 0,
-                width: item.width || 0,
-                height: item.height || 0,
-                fontName: item.fontName || '',
-                fontSize: Math.abs(t[0]) || 12
-            };
-        }).filter(it => it.str && it.str.trim());
-
-        // Cluster into rows by Y coordinate (top-to-bottom)
-        const rows = this.clusterRows(items);
-
-        // Build flowing HTML content; we won't pre-place images/tables — they'll be appended inline when referenced
-        let out = '';
-        let currentParagraph = '';
-
-        // Compute average font size for heading heuristics
-        const avgFontSize = items.length ? items.reduce((s, it) => s + it.fontSize, 0) / items.length : 12;
-
-        for (let r = 0; r < rows.length; r++) {
-            const row = rows[r];
-            const line = this.buildLineFromRow(row);
-            if (!line) continue;
-
-            // Warning/Notice/Caution detection
-            const warnMatch = line.match(/!\s*(WARNING|NOTICE|CAUTION|ATTENTION)|\b(WARNING|NOTICE|CAUTION|ATTENTION)\b[:\-]\s*(.*)/i);
-            if (warnMatch) {
-                if (currentParagraph.trim()) { out += `<p>${this.escapeHtml(currentParagraph.trim())}</p>\n`; currentParagraph = ''; }
-                let level = (warnMatch[1] || warnMatch[2] || '').toUpperCase();
-                const rest = (warnMatch[3] || line.replace(warnMatch[0], '')).trim();
-                if (!level) level = 'WARNING';
-                let color;
-                switch (level) {
-                    case 'ATTENTION': color = '#90ee90'; break;
-                    case 'WARNING': color = '#ffa500'; break;
-                    case 'CAUTION': color = '#ffff00'; break;
-                    case 'NOTICE': color = '#00008b'; break;
-                    default: color = '#ffa500'; break;
+                function addColumn(x) {
+                    columns.push(x);
+                    usage.push(1);
                 }
-                out += `<table><tbody><tr><th style="background-color:${color}"><span>⚠</span>${level}</th></tr><tr><td>${this.escapeHtml(rest)}</td></tr></tbody></table>`;
-                continue;
-            }
 
-            // Heading detection (from pdfConverter.html logic)
-            const headingTag = this.detectHeading(line, row, avgFontSize);
-            if (headingTag) {
-                if (currentParagraph.trim()) { out += `<p>${this.escapeHtml(currentParagraph.trim())}</p>\n`; currentParagraph = ''; }
-                const processedLine = this.processFigureLinks(line);
-                out += `<${headingTag}>${this.escapeHtml(processedLine)}</${headingTag}>\n`;
-                continue;
-            }
+                function updateColumn(idx, x) {
+                    const prev = columns[idx];
+                    const count = usage[idx];
+                    columns[idx] = (prev * count + x) / (count + 1);
+                    usage[idx] = count + 1;
+                }
 
-            // Paragraph decision
-            if (this.shouldStartNewParagraph(line, currentParagraph)) {
-                if (currentParagraph.trim()) { const processedParagraph = this.processFigureLinks(currentParagraph.trim()); out += `<p>${this.escapeHtml(processedParagraph)}</p>\n`; }
-                currentParagraph = line;
-            } else {
-                currentParagraph += (currentParagraph ? ' ' : '') + line;
-            }
-        }
+                function findClosestIndex(cols, x) {
+                    let best = -1;
+                    let bestDist = Infinity;
+                    for (let i = 0; i < cols.length; i++) {
+                        const d = Math.abs(cols[i] - x);
+                        if (d < bestDist) {
+                            bestDist = d;
+                            best = i;
+                        }
+                    }
+                    return best;
+                }
 
-        if (currentParagraph.trim()) { const processedParagraph = this.processFigureLinks(currentParagraph.trim()); out += `<p>${this.escapeHtml(processedParagraph)}</p>\n`; }
-
-        overlay.innerHTML = out;
-        return overlay;
-    }
-    async extractImages(page, viewport) {
-        const imgs = [];
-        try {
-            // Get page annotations (which can include images)
-            const annotations = await page.getAnnotations();
-
-            for (const annotation of annotations) {
-                if (annotation.subtype === 'Image') {
-                    try {
-                        const img = document.createElement('img');
-                        const imgData = await page.objs.get(annotation.id);
-                        if (imgData && imgData.src) {
-                            img.src = imgData.src;
-                        } else if (imgData && imgData.data && imgData.width && imgData.height) {
-                            const c = document.createElement('canvas');
-                            c.width = imgData.width;
-                            c.height = imgData.height;
-                            const ctx = c.getContext('2d');
-                            ctx.putImageData(new ImageData(new Uint8ClampedArray(imgData.data), imgData.width, imgData.height), 0, 0);
-                            img.src = c.toDataURL();
+                rows.forEach(r => {
+                    r.items.forEach(it => {
+                        if (columns.length === 0) {
+                            addColumn(it.x);
+                            return;
+                        }
+                        const idx = findClosestIndex(columns, it.x);
+                        const dist = Math.abs(columns[idx] - it.x);
+                        if (dist <= columnTolerance) {
+                            updateColumn(idx, it.x);
                         } else {
-                            continue;
+                            addColumn(it.x);
                         }
+                    });
+                });
 
-                        // Decide float based on horizontal position
-                        const x = annotation.rect[0];
-                        const pageW = viewport.width;
-                        const center = (annotation.rect[0] + annotation.rect[2]) / 2;
-                        if (center < pageW * 0.33) img.style.cssFloat = 'left';
-                        else if (center > pageW * 0.66) img.style.cssFloat = 'right';
+                // Sort columns left-to-right, carry usage counts
+                const pairs = columns.map((c, i) => ({ x: c, u: usage[i] }));
+                pairs.sort((a, b) => a.x - b.x);
+                const sortedCols = pairs.map(p => p.x);
 
-                        img.style.maxWidth = '45%';
-                        img.style.margin = '8px';
-                        imgs.push(img);
-                    } catch (e) {
-                        // ignore
-                    }
+                // Map rows to sorted columns and count per-column row appearances
+                const colRowCounts = new Array(sortedCols.length).fill(0);
+                rows.forEach(r => {
+                    const seen = new Array(sortedCols.length).fill(false);
+                    r.items.forEach(it => {
+                        const idx = findClosestIndex(sortedCols, it.x);
+                        if (Math.abs(sortedCols[idx] - it.x) <= columnTolerance) seen[idx] = true;
+                    });
+                    seen.forEach((v, i) => { if (v) colRowCounts[i]++; });
+                });
+
+                // Filter out sparse columns (appear in very few rows)
+                const minRowAppear = Math.max(1, Math.floor(rows.length / 6)); // tuneable
+                const finalCols = sortedCols.filter((c, i) => colRowCounts[i] >= minRowAppear);
+
+                if (finalCols.length < 2) return null;
+
+                // Check overall consistency: enough rows should map to the detected columns
+                let consistentRows = 0;
+                rows.forEach(r => {
+                    const mapped = finalCols.map(cx => r.items.some(it => Math.abs(it.x - cx) <= columnTolerance));
+                    if (mapped.filter(Boolean).length >= Math.max(1, Math.floor(finalCols.length / 2))) consistentRows++;
+                });
+
+                if (consistentRows >= Math.max(2, Math.floor(rows.length / 3))) {
+                    return finalCols;
                 }
+                return null;
             }
 
-            // Extract embedded images from operator list (best-effort)
-            const operatorList = await page.getOperatorList();
-            for (let i = 0; i < operatorList.fnArray.length; i++) {
-                if (operatorList.fnArray[i] === pdfjsLib.OPS.paintImageXObject || operatorList.fnArray[i] === pdfjsLib.OPS.paintImageXObjectRepeat) {
-                    try {
-                        const imgIndex = operatorList.argsArray[i][0];
-                        const imgData = page.objs.get(imgIndex);
-                        if (imgData) {
-                            const img = document.createElement('img');
-                            if (imgData.src) img.src = imgData.src;
-                            else if (imgData.data && imgData.width && imgData.height) {
-                                const c = document.createElement('canvas');
-                                c.width = imgData.width;
-                                c.height = imgData.height;
-                                const ctx = c.getContext('2d');
-                                ctx.putImageData(new ImageData(new Uint8ClampedArray(imgData.data), imgData.width, imgData.height), 0, 0);
-                                img.src = c.toDataURL();
-                            } else {
-                                continue;
-                            }
-                            img.style.display = 'block';
-                            img.style.maxWidth = '100%';
-                            img.style.margin = '8px 0';
-                            imgs.push(img);
-                        }
-                    } catch (e) {
-                        // ignore
-                    }
-                }
+            const columns = detectTable(rows);
+
+            if (columns) {
+                //create absolutely positioned spans preserving case and approximate styles
+                // Use visual gridmapper to map it to a <p> for each sentence/line
+                positionedItems.forEach(it => {
+                    const span = document.createElement('span');
+                    span.textContent = it.str;
+                    span.style.position = 'absolute';
+                    // top in viewport coordinates: PDF y is baseline; adjust by fontSize
+                    span.style.left = `${it.x}px`;
+                    span.style.top = `${it.y - it.fontSize}px`;
+                    span.style.fontSize = `${it.fontSize}px`;
+                    span.style.fontFamily = it.fontFamily;
+                    span.style.whiteSpace = 'pre';
+                    textLayer.appendChild(span);
+                });
+                pageDiv.appendChild(textLayer);
             }
-        } catch (error) {
-            console.error('Error extracting images:', error);
+
+            pageDiv.appendChild(canvas);
+
+            const pageNumberDiv = document.createElement('div');
+            pageNumberDiv.className = 'page-number';
+            pageNumberDiv.textContent = `Page ${pageNum} of ${numPages}`;
+            pageDiv.appendChild(pageNumberDiv);
+
+            pagesContainer.appendChild(pageDiv);
         }
-        return imgs;
-    }
 
-    // Cluster items into rows by Y coordinate (top -> bottom)
-    clusterRows(items) {
-        if (!items || items.length === 0) return [];
-        // sort by descending y (top to bottom in PDF space may be reversed depending on transforms)
-        const sorted = items.slice().sort((a, b) => b.y - a.y || a.x - b.x);
-        const rows = [];
-        let current = [sorted[0]];
-        const threshold = Math.max(6, (sorted[0].fontSize || 12) * 0.6);
-        for (let i = 1; i < sorted.length; i++) {
-            const it = sorted[i];
-            const last = current[current.length - 1];
-            if (Math.abs(it.y - last.y) <= threshold) {
-                current.push(it);
-            } else {
-                rows.push(current.slice().sort((p, q) => p.x - q.x));
-                current = [it];
-            }
-        }
-        if (current && current.length) rows.push(current.slice().sort((p, q) => p.x - q.x));
-        return rows;
-    }
-
-    // Heuristic heading detection adapted from pdfConverter.html
-    detectHeading(line, row, avgFontSize) {
-        if (!line || !row || row.length === 0) return null;
-        const fontSize = row[0].fontSize || 12;
-        const fontName = row[0].fontName || '';
-        const isAllCaps = line === line.toUpperCase() && line !== line.toLowerCase();
-        const isBold = fontName.toLowerCase().includes('bold') || fontName.toLowerCase().includes('black');
-        const isLargerThanBody = fontSize > avgFontSize * 1.1;
-        const isSameAsBody = Math.abs(fontSize - avgFontSize) <= 1;
-        const isUnderlined = line.includes('_') || fontName.toLowerCase().includes('underline');
-
-        if (isAllCaps && isLargerThanBody) return 'h4';
-        if (isBold && isLargerThanBody && !isAllCaps) return 'h6';
-        if (isBold && isUnderlined) return 'h5';
-        if ((isBold || isAllCaps) && isSameAsBody) return null;
-        return null;
-    }
-
-    processFigureLinks(text) {
-        return (text || '').replace(/Fig\.?\s*(\d+)/gi, (match, figNum) => {
-            return `<a href="#figure${figNum}" class="figure${figNum}">Fig. ${figNum}</a>`;
-        });
-    }
-
-    shouldStartNewParagraph(line, currentParagraph) {
-        if (!currentParagraph) return true;
-        const paragraphStarters = [
-            /^\d+\.\s/,
-            /^[A-Z]\.\s/,
-            /^•\s|^\*\s|^-\s/,
-            /^[A-Z][A-Z\s]{10,}/,
-            /^\s*$/
-        ];
-        for (const pattern of paragraphStarters) if (pattern.test(line)) return true;
-        const currentEndsWithPeriod = /[.!?]\s*$/.test(currentParagraph.trim());
-        const lineStartsCapital = /^[A-Z]/.test(line.trim());
-        if (currentEndsWithPeriod && lineStartsCapital) return true;
-        return false;
-    }
-
-    escapeHtml(str) {
-        if (str === null || str === undefined) return '';
-        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-
-    // Allow client to change number of grid columns (1,2,4...)
-    setColumns(n) {
-        this.columns = Math.max(1, parseInt(n) || 1);
-    }
-
-    // Build a line string from a row using spacing heuristics to avoid bad joins/splits
-    buildLineFromRow(row) {
-        if (!row || row.length === 0) return '';
-        // ensure row sorted by x
-        const sorted = row.slice().sort((a, b) => a.x - b.x);
-        const parts = [];
-        for (let i = 0; i < sorted.length; i++) {
-            const cur = sorted[i];
-            const token = String(cur.str || '').trim();
-            if (!token) continue;
-            parts.push(token);
-            if (i < sorted.length - 1) {
-                const next = sorted[i + 1];
-                const gap = next.x - (cur.x + (cur.width || (cur.fontSize * token.length * 0.5)));
-                const threshold = Math.max(2, (cur.fontSize || 12) * 0.35);
-                if (gap > threshold) parts.push(' ');
-                // if gap is small, don't force extra space (likely split glyphs)
-            }
-        }
-        // Collapse accidental double spaces
-        return parts.join('').replace(/\s+/g, ' ').trim();
+        return numPages;
+    } catch (error) {
+        console.error('Detailed PDF Rendering Error:', error);
+        throw error;
     }
 }
 
-// async function renderPDF(file) {
-//     try {
-//         console.log('Rendering PDF:', file);
-
-//         const arrayBuffer = await file.arrayBuffer();
-//         console.log('Array Buffer:', arrayBuffer);
-
-//         const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-//         console.log('PDF Document:', pdfDoc);
-
-//         const numPages = pdfDoc.numPages;
-//         const pagesContainer = document.getElementById('pages');
-
-//         // Keep the first page, remove others
-//         while (pagesContainer.children.length > 1) {
-//             pagesContainer.removeChild(pagesContainer.lastChild);
-//         }
-
-//         for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-//             const page = await pdfDoc.getPage(pageNum);
-
-//             // Extract text content
-//             const viewport = page.getViewport({ scale: 1.5 });
-//             const textContent = await page.getTextContent();
-
-//             // Create a canvas or div to render the pdf contents
-//             const canvas = document.createElement('canvas');
-//             const context = canvas.getContext('2d');
-//             canvas.width = viewport.width;
-//             canvas.height = viewport.height;
-
-//             await page.render({
-//                 canvasContext: context,
-//                 viewport: viewport
-//             }).promise;
-
-//             const pageDiv = document.createElement('div');
-//             pageDiv.className = 'page';
-//             pageDiv.contentEditable = true;
-//             pageDiv.spellcheck = true;
-
-//             // Process text items with potential positioning
-//             const textLines = [];
-//             let currentLine = '';
-//             let lastY = null;
-
-//             textContent.items.forEach(item => {
-//                 // Check if item is on a new line based on Y transform
-//                 if (lastY !== null && Math.abs(item.transform[5] - lastY) > 10) {
-//                     // New line detected
-//                     textLines.push(currentLine);
-//                     currentLine = '';
-//                 }
-
-//                 currentLine += item.str + ' ';
-//                 lastY = item.transform[5];
-//             });
-
-//             // Add last line
-//             if (currentLine.trim()) {
-//                 textLines.push(currentLine);
-//             }
-
-//             // Create paragraphs to preserve some layout
-//             pageDiv.innerHTML = textLines.map(line => `<p>${line.trim()}</p>`).join('');
-//             pageDiv.appendChild(canvas);
-
-//             const pageNumberDiv = document.createElement('div');
-//             pageNumberDiv.className = 'page-number';
-//             pageNumberDiv.textContent = `Page ${pageNum} of ${numPages}`;
-//             pageDiv.appendChild(pageNumberDiv);
-
-//             pagesContainer.appendChild(pageDiv);
-//         }
-
-//         return numPages;
-//     } catch (error) {
-//         console.error('Detailed PDF Rendering Error:', error);
-//         throw error;
-//     }
-// }
-
-
-
-// Add extract table later using VisualGridMapper
-export default new PDFRenderer();
+export default { renderPDF };
