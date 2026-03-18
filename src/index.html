@@ -10,30 +10,36 @@
 
 <body>
     <header>
-        <div style="display:flex;align-items:center;gap:14px">
+        <div style="display:flex; flex-wrap: wrap; align-items:center; gap:6px">
             <strong>Website Development Template</strong>
             <small style="color:#666">Multi-page with jump-to-page dropdown</small>
         </div>
 
         <div class="toolbar" style="margin-left:auto">
-            <button onclick="exec('bold')" title="Bold"><b>B</b></button>
-            <button onclick="exec('italic')" title="Italic"><i>I</i></button>
-            <button onclick="exec('underline')" title="Underline"><u>U</u></button>
-            <button onclick="exec('insertUnorderedList')" title="Bullets">• List</button>
-            <button onclick="exec('insertOrderedList')" title="Numbered">1. List</button>
-            <select onchange="exec('formatBlock', this.value)">
-                <option value="">Normal</option>
-                <option value="h1">Heading 1</option>
-                <option value="h2">Heading 2</option>
-                <option value="h3">Heading 3</option>
-            </select>
-            <input type="file" accept="application/pdf" onchange="renderPDF(event)" title="Import PDF" />
-            <button onclick="toggleColumns()" title="Toggle two-column">2-col</button>
-            <button onclick="addPage()" title="Add a new page">+ Page</button>
-            <button onclick="downloadHTML('page.html')" title="Download as static HTML">Download .html</button>
-            <button onclick="downloadPHP()" title="Download site as .php">Download .php</button>
-            <button onclick="printPage()" title="Print (Save as PDF)">Print as PDF</button>
-            <button id="exportPdfBtn" onclick="exportPDF()" title="Export PDF (html2pdf)">Export PDF</button>
+            <div class="table-edit">
+                <button onclick="exec('bold')" title="Bold"><b>B</b></button>
+                <button onclick="exec('italic')" title="Italic"><i>I</i></button>
+                <button onclick="exec('underline')" title="Underline"><u>U</u></button>
+                <button onclick="exec('insertUnorderedList')" title="Bullets">• List</button>
+                <button onclick="exec('insertOrderedList')" title="Numbered">1. List</button>
+                <select onchange="exec('formatBlock', this.value)">
+                    <option value="">Normal</option>
+                    <option value="h1">Heading 1</option>
+                    <option value="h2">Heading 2</option>
+                    <option value="h3">Heading 3</option>
+                </select>
+                <button onclick="toggleColumns()" title="Toggle two-column">2-col</button>
+                <button onclick="addPage()" title="Add a new page">+ Page</button>
+            </div>
+            <div class="export-bar" style="display: flex; flex-direction: row; gap: 5px;">
+                <div class="import-data">
+                    <input type="file" accept="application/pdf" onchange="renderPDF(event)" title="Import PDF" />
+                </div>
+                <button onclick="downloadHTML('page.html')" title="Download as static HTML">Download .html</button>
+                <button onclick="downloadPHP()" title="Download site as .php">Download .php</button>
+                <button onclick="printPage()" title="Print (Save as PDF)">Print as PDF</button>
+                <button id="exportPdfBtn" onclick="exportPDF()" title="Export PDF (html2pdf)">Export PDF</button>
+            </div>
         </div>
     </header>
     <div class="nav-menu">
@@ -43,6 +49,11 @@
         <select id="pageJump" onchange="jumpToPage(this.value)"></select>
     </div>
     <main>
+        <div class="page-view" style="display: flex; justify-content: start;">
+            <button onclick="renderSinglePDF()" class="page-view pdf-view" title="PDF View">PDF View</button>
+            <button onclick="renderPDFDiffView()" class="page-view diff-view" title="Page Diff View">Diff View</button>
+            <button class="page-view html-view" title="HTML View">HTML View</button>
+        </div>
         <div id="pages">
             <div class="page active" contenteditable="true" spellcheck="true">
                 <h1 style="text-align:center">Your Page Title</h1>
