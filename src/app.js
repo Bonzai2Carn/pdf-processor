@@ -36,14 +36,23 @@ window.pdfRenderer = renderer; // optional access from console
 
 
 window.renderPDF = async (event) => {
-    const file = event?.target?.files?.[0];
-    if (!file) return;
+    const files = event?.target?.files;
+    if (!files || files.length === 0) return;
     try {
-        const numPages = await renderer.renderPDF(file);
+        const filesAr = Array.from(files);
+        const numPages = await renderer.renderPDF(Array.from(filesAr));
 
         // update nav status and page jump dropdown if present
         const status = document.getElementById('nav-status');
-        if (status) status.textContent = `Page 1 of ${numPages}`;
+        if (status) {
+            if (filesArr.length === 1) {
+                status.textContent = `Page 1 of ${numPages}`;
+            } else if (filesArr.length === 2) {
+                status.textContent = `Diff view: ${filesArr[0].name} ↔ ${filesArr[1].name} (${numPages} pages)`;
+            } else {
+                status.textContent = `Rendered ${filesArr.length} files (showing diff of first two)`;
+            }
+        }
 
         const jump = document.getElementById('pageJump');
         if (jump) {

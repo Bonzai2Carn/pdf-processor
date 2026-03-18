@@ -493,7 +493,9 @@ async function renderPDFDiffView(file1, file2, container) {
 
     // Load both PDFs
     const pdf1 = await loadPDFData(file1);
+    console.log("pdf 1", pdf1);
     const pdf2 = await loadPDFData(file2);
+    console.log("pdf 1", pdf2);
 
     const maxPages = Math.max(pdf1.numPages, pdf2.numPages);
 

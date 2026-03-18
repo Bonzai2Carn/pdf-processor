@@ -33,7 +33,8 @@
             </div>
             <div class="export-bar" style="display: flex; flex-direction: row; gap: 5px;">
                 <div class="import-data">
-                    <input type="file" accept="application/pdf" onchange="renderPDF(event)" title="Import PDF" />
+                    <input type="file" multiple accept="application/pdf" onchange="renderPDF(event)"
+                        title="Import PDF" />
                 </div>
                 <button onclick="downloadHTML('page.html')" title="Download as static HTML">Download .html</button>
                 <button onclick="downloadPHP()" title="Download site as .php">Download .php</button>
