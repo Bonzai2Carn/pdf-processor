@@ -525,12 +525,30 @@ async function renderPDFDiffView(file1, file2, container) {
             const viewport = page.getViewport({ scale: 1.5 });
             const textContent = await page.getTextContent();
 
+            // Render canvas - Only render the images.
             const canvas = document.createElement('canvas');
             canvas.className = 'pdf-canvas';
+            canvas.dataset.pageNumber = pageNum;
             canvas.width = viewport.width;
             canvas.height = viewport.height;
 
+            if (pageNum === 1) {
+                canvas.classList.add('active');
+            }
+
+            // Grab everything on the pdf and place it on the canvas
             const context = canvas.getContext('2d');
+            // HIJACK CANVAS TEXT METHODS
+            const originalFillText = context.fillText;
+            const originalStrokeText = context.strokeText;
+            context.fillText = () => { }; //set text to null;
+            context.strokeText = () => { };
+
+
+            await page.render({ canvasContext: context, viewport }).promise;
+
+            context.fillText = originalFillText;
+            context.strokeText = originalStrokeText;
             await page.render({ canvasContext: context, viewport }).promise;
 
             const pageWrapper = document.createElement('div');
