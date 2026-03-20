@@ -6,7 +6,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 // import { PdfDocument } from 'pdf-tables-parser';
 
 // Set the worker source
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@5.4.530/build/pdf.worker.mjs?url';
+import workerUrl from 'pdfjs-dist/build/pdf.worker.js?url';
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
 async function extractPageText(page) {
     const textContent = await page.getTextContent();
