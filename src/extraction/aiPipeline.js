@@ -1,49 +1,30 @@
 /**
  * aiPipeline.js
  *
- * AI-assisted PDF → semantic HTML extraction pipeline.
- *
- * Two-track architecture:
- *   Track A: MuPDF WASM → spatial text items (reused from existing pipeline)
- *   Track B: High-DPI canvas → ONNX layout model → labeled bounding boxes
- *
- * Merge: AI regions define structure, MuPDF items provide text content.
+ * AI-assisted PDF → semantic HTML extraction pipeline using a Pure Vision architecture.
  *
  * Stages:
- *   1. MuPDF text extraction + font stats (same as legacy)
- *   2. Header/footer pre-pass (same as legacy)
- *   3. Render page to high-DPI image
- *   4. Layout detection via ONNX worker → AI regions
- *   5. Coordinate normalization + item-to-region assignment
- *   6. Table regions → OpenCV worker → cell grids
- *   7. Reading order via XY-cut on regions
- *   8. Build JSON tree
- *   9. Convert to HTML
- *
- * Falls back to legacy pipeline.js if the AI model is unavailable.
+ *   1. Render page to high-DPI image (PDF.js)
+ *   2. Layout detection via YOLOv8 ONNX worker → semantic regions
+ *   3. Coordinate normalization and reading order
+ *   4. Crop region bounding boxes from Canvas
+ *   5. TrOCR ONNX worker reads crops natively 
+ *   6. Convert JSON tree → HTML
  */
 
-import { openDocument, extractPageItems, extractPageImageBBoxes, collectDocStats } from './mupdfExtractor.js';
-import { separateHeaderFooter, buildHeaderFooterSets } from './headerFooterDetector.js';
-import { modelToPage, assignItemsToRegions, resolveOverlaps } from './coordNormalizer.js';
+import { openDocument, extractPageImageBBoxes, collectDocStats } from './mupdfExtractor.js';
+import { loadPdfjsDocument, renderPageToImage } from './pageRenderer.js';
+import { modelToPage, resolveOverlaps } from './coordNormalizer.js';
 import { sortReadingOrder } from './readingOrder.js';
 import { treeToHTML } from './treeToHTML.js';
-import { loadPdfjsDocument, renderPageToImage } from './pageRenderer.js';
-import { clusterIntoLines, groupIntoParagraphs } from './lineClusterer.js';
 
 // ── Worker management ─────────────────────────────────────────────────────
 
 let layoutWorker = null;
-let opencvWorker = null;
+let ocrWorker = null;
 let layoutWorkerReady = false;
-let opencvWorkerReady = false;
+let ocrWorkerReady = false;
 
-/**
- * Initialize the layout detection worker. Call this early (e.g., on page load).
- * Resolves when the model is loaded and ready for inference.
- *
- * @returns {Promise<void>}
- */
 export function initLayoutWorker() {
     if (layoutWorker && layoutWorkerReady) return Promise.resolve();
 
@@ -67,48 +48,46 @@ export function initLayoutWorker() {
     });
 }
 
-/**
- * Initialize the OpenCV worker on demand.
- */
-function initOpenCVWorker() {
-    if (opencvWorker && opencvWorkerReady) return Promise.resolve();
+export function initOcrWorker(onProgress) {
+    if (ocrWorker && ocrWorkerReady) return Promise.resolve();
 
     return new Promise((resolve, reject) => {
-        opencvWorker = new Worker(
-            new URL('../workers/opencvWorker.js', import.meta.url),
+        ocrWorker = new Worker(
+            new URL('../workers/ocrWorker.js', import.meta.url),
             { type: 'module' }
         );
 
-        opencvWorker.onmessage = (e) => {
+        ocrWorker.onmessage = (e) => {
             if (e.data.type === 'ready') {
-                opencvWorkerReady = true;
+                ocrWorkerReady = true;
                 resolve();
+            } else if (e.data.type === 'progress') {
+                onProgress?.('loading-ocr-progress', e.data);
             } else if (e.data.type === 'error') {
                 reject(new Error(e.data.error));
             }
         };
 
-        opencvWorker.onerror = (err) => reject(err);
-        opencvWorker.postMessage({ type: 'init' });
+        ocrWorker.onerror = (err) => reject(err);
+        ocrWorker.postMessage({ type: 'init' });
     });
 }
 
-/**
- * Terminate the OpenCV worker (free memory after table processing).
- */
-export function disposeOpenCVWorker() {
-    if (opencvWorker) {
-        opencvWorker.terminate();
-        opencvWorker = null;
-        opencvWorkerReady = false;
+export function disposeWorkers() {
+    if (layoutWorker) {
+        layoutWorker.terminate();
+        layoutWorker = null;
+        layoutWorkerReady = false;
+    }
+    if (ocrWorker) {
+        ocrWorker.terminate();
+        ocrWorker = null;
+        ocrWorkerReady = false;
     }
 }
 
-/**
- * Check if the layout model is loaded and ready.
- */
 export function isModelReady() {
-    return layoutWorkerReady;
+    return layoutWorkerReady && ocrWorkerReady;
 }
 
 // ── Worker communication helpers ──────────────────────────────────────────
@@ -121,101 +100,78 @@ function detectLayout(imageBitmap) {
             else reject(new Error(e.data.error || 'Layout detection failed'));
         };
         layoutWorker.addEventListener('message', handler);
-        layoutWorker.postMessage(
-            { type: 'detect', data: { imageBitmap } },
-            [imageBitmap]  // transfer ownership
+        // Do not transfer imageBitmap here because we need it for OCR crops
+        layoutWorker.postMessage({ type: 'detect', data: { imageBitmap } });
+    });
+}
+
+function extractTextForCrop(imageBitmap) {
+    return new Promise((resolve, reject) => {
+        const handler = (e) => {
+            ocrWorker.removeEventListener('message', handler);
+            if (e.data.type === 'result') resolve(e.data.text);
+            else reject(new Error(e.data.error || 'OCR failed'));
+        };
+        ocrWorker.addEventListener('message', handler);
+        ocrWorker.postMessage(
+            { type: 'extract', data: { imageBitmap } },
+            [imageBitmap] // Hand over ownership to save memory
         );
     });
 }
 
-function extractTableGrid(imageBitmap, tableBBox, imageWidth, imageHeight) {
-    return new Promise((resolve, reject) => {
-        const handler = (e) => {
-            opencvWorker.removeEventListener('message', handler);
-            if (e.data.type === 'result') resolve(e.data.grid);
-            else reject(new Error(e.data.error || 'Grid extraction failed'));
-        };
-        opencvWorker.addEventListener('message', handler);
-        opencvWorker.postMessage({
-            type: 'extractGrid',
-            data: { imageBitmap, tableBBox, imageWidth, imageHeight },
-        });
-    });
+async function createCrop(imageBitmap, bboxX, bboxY, bboxW, bboxH) {
+    const canvas = new OffscreenCanvas(bboxW, bboxH);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imageBitmap, bboxX, bboxY, bboxW, bboxH, 0, 0, bboxW, bboxH);
+    return await createImageBitmap(canvas);
 }
 
 // ── MAIN PIPELINE ─────────────────────────────────────────────────────────
 
-/**
- * Extract semantic HTML from a PDF using the AI-assisted pipeline.
- *
- * @param {Uint8Array} pdfBytes
- * @param {(stage: string, done?: number, total?: number) => void} [onProgress]
- * @returns {Promise<{ html: string, jsonTree: object }>}
- */
 export async function extractWithAI(pdfBytes, onProgress) {
-    // ── Ensure layout worker is ready ─────────────────────────────────
     if (!layoutWorkerReady) {
-        onProgress?.('loading-model');
+        onProgress?.('loading-layout-model');
         await initLayoutWorker();
+    }
+    if (!ocrWorkerReady) {
+        onProgress?.('loading-ocr-model');
+        await initOcrWorker(onProgress);
     }
 
     onProgress?.('extracting');
 
-    // ── Stage 1: MuPDF extraction (Track A) ───────────────────────────
     const { doc, numPages } = openDocument(pdfBytes);
     const stats = collectDocStats(doc);
-
-    // Load pdfjs doc for canvas rendering (Track B)
     const pdfjsDoc = await loadPdfjsDocument(pdfBytes);
 
-    // ── Stage 2: Header/footer pre-pass ───────────────────────────────
-    onProgress?.('scanning');
-    const pageCache = [];
-    const headerCandidates = new Map();
-    const footerCandidates = new Map();
-
-    for (let p = 0; p < numPages; p++) {
-        const { items, pageWidth, pageHeight } = extractPageItems(doc, p);
-        pageCache.push({ items, pageWidth, pageHeight });
-        separateHeaderFooter(items, pageHeight, headerCandidates, footerCandidates, numPages);
-    }
-
-    const { headers, footers } = buildHeaderFooterSets(headerCandidates, footerCandidates, numPages);
-
-    // ── Main pass: process each page ──────────────────────────────────
     const jsonTree = { pages: [] };
-    let hasTableRegions = false;
 
     for (let p = 0; p < numPages; p++) {
         onProgress?.('analyzing', p + 1, numPages);
 
-        const { items, pageWidth, pageHeight } = pageCache[p];
-
-        // Filter headers/footers from body items
-        const bodyItems = items.filter(
-            it => !headers.has(it.str.trim()) && !footers.has(it.str.trim())
-        );
-
-        // ── Stage 3: Render page to image (Track B) ──────────────────
         const { imageBitmap, width: imgW, height: imgH } = await renderPageToImage(pdfjsDoc, p);
 
-        // ── Stage 4: Layout detection ─────────────────────────────────
+        // Fetch physical page metrics for HTML coordinate positioning
+        const pageNode = doc.loadPage(p);
+        const bounds = pageNode.getBounds(); // [x0, y0, x1, y1]
+        const pageWidth = bounds[2] - bounds[0];
+        const pageHeight = bounds[3] - bounds[1];
+
+        // ── Stage 1: Layout Detection (YOLO) 
         let aiRegions;
         try {
             const rawRegions = await detectLayout(imageBitmap);
 
-            // Convert model-space bboxes to PDF coords
             aiRegions = rawRegions.map((r, i) => ({
                 ...r,
                 id: `p${p}_r${i}`,
                 bbox: modelToPage(r.bbox, pageWidth, pageHeight),
             }));
 
-            // Resolve overlapping regions
             aiRegions = resolveOverlaps(aiRegions);
         } catch (err) {
             console.warn(`AI layout detection failed for page ${p + 1}:`, err);
-            // Fallback: create a single "text" region covering the whole page
             aiRegions = [{
                 id: `p${p}_fallback`,
                 label: 'text',
@@ -224,58 +180,57 @@ export async function extractWithAI(pdfBytes, onProgress) {
             }];
         }
 
-        // ── Stage 5: Assign text items to regions ─────────────────────
-        const { assigned, unassigned } = assignItemsToRegions(bodyItems, aiRegions);
+        // ── Stage 2: Reading Order Sorting
+        const orderedRegions = sortReadingOrder(aiRegions, pageWidth, pageHeight);
 
-        // Build region data with text
-        const regions = aiRegions.map(region => {
-            const regionItems = assigned.get(region.id) || [];
-            // Sort items top-to-bottom, left-to-right within the region
-            regionItems.sort((a, b) => b.y - a.y || a.x - b.x);
+        // ── Stage 3: Vision Text Generation (TrOCR)
+        for (const region of orderedRegions) {
+            const isNonText = ['picture', 'formula'].includes(region.label);
 
-            // Compute text and style from items
-            const lines = clusterItemsIntoText(regionItems);
-            const text = lines.join(' ').replace(/\s+/g, ' ').trim();
+            if (!isNonText) {
+                try {
+                    // Convert PDF layout bounds back into Image bounds for cropping
+                    const scaleX = imgW / pageWidth;
+                    const scaleY = imgH / pageHeight;
 
-            const styles = computeStyles(regionItems);
-            const isTable = region.label === 'table';
-            if (isTable) hasTableRegions = true;
+                    const cropX = Math.round(region.bbox.x * scaleX);
+                    // y axis inversion (PDF has y=0 at bottom, image has y=0 at top)
+                    const cropY = Math.round((pageHeight - region.bbox.y - region.bbox.h) * scaleY);
+                    const cropW = Math.round(region.bbox.w * scaleX);
+                    const cropH = Math.round(region.bbox.h * scaleY);
 
-            return {
-                ...region,
-                text,
-                items: regionItems,
-                styles,
-                grid: null,  // populated in Phase 3 for tables
-                htmlTag: resolveHTMLTag(region.label),
-            };
-        });
+                    // Constrain bounds to prevent canvas errors
+                    const cX = Math.max(0, cropX);
+                    const cY = Math.max(0, cropY);
+                    const cW = Math.min(imgW - cX, cropW);
+                    const cH = Math.min(imgH - cY, cropH);
 
-        // Handle unassigned items — cluster into paragraphs using legacy logic
-        if (unassigned.length > 0) {
-            const fallbackLines = clusterIntoLines(unassigned);
-            const fallbackParas = groupIntoParagraphs(fallbackLines);
-
-            for (const para of fallbackParas) {
-                regions.push({
-                    id: `p${p}_unassigned_${regions.length}`,
-                    label: 'text',
-                    confidence: 0,
-                    bbox: computeBBox(para.lines.flatMap(l => l.items)),
-                    readingOrder: -1,
-                    text: para.text,
-                    items: para.lines.flatMap(l => l.items),
-                    styles: computeStyles(para.lines.flatMap(l => l.items)),
-                    grid: null,
-                    htmlTag: 'p',
-                });
+                    if (cW > 0 && cH > 0) {
+                        const cropBitmap = await createCrop(imageBitmap, cX, cY, cW, cH);
+                        const text = await extractTextForCrop(cropBitmap);
+                        region.text = text || '';
+                        
+                        // If it's a table, TrOCR sometimes returns Markdown we might want to flag
+                        if (region.label === 'table') {
+                            region.grid = null; // Removed OpenCV dependency
+                        }
+                    } else {
+                        region.text = '';
+                    }
+                } catch (e) {
+                    console.warn('OCR failed for region:', region.id, e);
+                    region.text = '';
+                }
+            } else {
+                region.text = '';
             }
+
+            // Fill stub information for legacy `treeToHTML` backwards compatibility
+            region.items = [];
+            region.styles = { bold: false, italic: false, fontSize: 12 };
+            region.htmlTag = resolveHTMLTag(region.label);
         }
 
-        // ── Stage 7: Reading order ────────────────────────────────────
-        const orderedRegions = sortReadingOrder(regions, pageWidth, pageHeight);
-
-        // Get image bboxes for picture placeholders
         const imageBBoxes = extractPageImageBBoxes(doc, p);
 
         jsonTree.pages.push({
@@ -285,51 +240,11 @@ export async function extractWithAI(pdfBytes, onProgress) {
             regions: orderedRegions,
             imageBBoxes,
         });
+
+        // Clear top-level image Bitmap after processing all crops to free RAM early
+        imageBitmap.close();
     }
 
-    // ── Stage 6: Table refinement via OpenCV ──────────────────────────
-    if (hasTableRegions) {
-        onProgress?.('refining-tables');
-        try {
-            await initOpenCVWorker();
-
-            for (const page of jsonTree.pages) {
-                const tableRegions = page.regions.filter(r => r.label === 'table');
-                if (!tableRegions.length) continue;
-
-                // Re-render page for OpenCV (need a fresh ImageBitmap since we transferred the previous one)
-                const { imageBitmap, width: imgW, height: imgH } = await renderPageToImage(pdfjsDoc, page.pageIndex);
-
-                for (const tableRegion of tableRegions) {
-                    try {
-                        // Convert PDF bbox to image pixel coords for OpenCV
-                        const scaleX = imgW / page.width;
-                        const scaleY = imgH / page.height;
-                        const imgBBox = {
-                            x: tableRegion.bbox.x * scaleX,
-                            y: (page.height - tableRegion.bbox.y - tableRegion.bbox.h) * scaleY,
-                            w: tableRegion.bbox.w * scaleX,
-                            h: tableRegion.bbox.h * scaleY,
-                        };
-
-                        const grid = await extractTableGrid(imageBitmap, imgBBox, imgW, imgH);
-                        if (grid.rows.length > 1 && grid.cols.length > 1) {
-                            // Assign text items to cells
-                            tableRegion.grid = buildCellText(tableRegion.items, grid, page.width, page.height, imgW, imgH);
-                        }
-                    } catch (err) {
-                        console.warn('Table grid extraction failed:', err);
-                    }
-                }
-            }
-
-            disposeOpenCVWorker();
-        } catch (err) {
-            console.warn('OpenCV worker initialization failed:', err);
-        }
-    }
-
-    // ── Stage 9: Convert JSON tree to HTML ────────────────────────────
     onProgress?.('building-html');
     const html = treeToHTML(jsonTree, stats);
 
@@ -337,54 +252,6 @@ export async function extractWithAI(pdfBytes, onProgress) {
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────
-
-/**
- * Simple text clustering from items (without full line clustering).
- */
-function clusterItemsIntoText(items) {
-    if (!items.length) return [];
-
-    // Group by approximate Y position
-    const lines = [];
-    for (const item of items) {
-        const tol = (item.fontSize || 10) * 0.35;
-        let found = false;
-        for (const line of lines) {
-            if (Math.abs(line.y - item.y) <= tol) {
-                line.items.push(item);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            lines.push({ y: item.y, items: [item] });
-        }
-    }
-
-    // Sort lines top-to-bottom, items left-to-right
-    lines.sort((a, b) => b.y - a.y);
-    return lines.map(l => {
-        l.items.sort((a, b) => a.x - b.x);
-        return l.items.map(i => i.str).join(' ');
-    });
-}
-
-function computeStyles(items) {
-    if (!items.length) return { bold: false, italic: false, fontSize: 12 };
-    const allBold = items.every(i => i.isBold);
-    const allItalic = items.every(i => i.isItalic);
-    const maxFontSize = Math.max(...items.map(i => i.fontSize || 12));
-    return { bold: allBold, italic: allItalic, fontSize: maxFontSize };
-}
-
-function computeBBox(items) {
-    if (!items.length) return { x: 0, y: 0, w: 0, h: 0 };
-    const minX = Math.min(...items.map(i => i.x));
-    const minY = Math.min(...items.map(i => i.y));
-    const maxX = Math.max(...items.map(i => i.x + (i.width || i.fontSize * 0.5)));
-    const maxY = Math.max(...items.map(i => i.y + (i.height || i.fontSize)));
-    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
-}
 
 function resolveHTMLTag(label) {
     const map = {
@@ -399,38 +266,4 @@ function resolveHTMLTag(label) {
         'footnote': 'aside',
     };
     return map[label] || 'p';
-}
-
-/**
- * Build a 2D array of cell text from items and OpenCV grid.
- * Grid rows/cols are in image pixel coords — convert to PDF coords for matching.
- */
-function buildCellText(items, grid, pageWidth, pageHeight, imgW, imgH) {
-    const { rows, cols, cellBounds } = grid;
-    if (!cellBounds || !cellBounds.length) return null;
-
-    const scaleX = pageWidth / imgW;
-    const scaleY = pageHeight / imgH;
-
-    const numRows = rows.length - 1;
-    const numCols = cols.length - 1;
-    const cells = Array.from({ length: numRows }, () => Array(numCols).fill(''));
-
-    for (const item of items) {
-        // Item center in image coords
-        const imgCx = item.x / scaleX + (item.width || item.fontSize * 0.3) / (2 * scaleX);
-        // PDF y=0=bottom → image y=0=top
-        const imgCy = (pageHeight - item.y) / scaleY;
-
-        // Find which cell contains this point
-        for (const cell of cellBounds) {
-            if (imgCx >= cell.x && imgCx <= cell.x + cell.w &&
-                imgCy >= cell.y && imgCy <= cell.y + cell.h) {
-                cells[cell.row][cell.col] += (cells[cell.row][cell.col] ? ' ' : '') + item.str;
-                break;
-            }
-        }
-    }
-
-    return { rows, cols, cells };
 }

@@ -14,6 +14,7 @@
  */
 
 const MODEL_URL = '/models/yolov8n-doclaynet.onnx';
+import * as ort from 'onnxruntime-web';
 const CACHE_NAME = 'darla-models-v1';
 const MODEL_SIZE = 640;
 const CONF_THRESHOLD = 0.25;
@@ -62,9 +63,7 @@ self.onmessage = async (e) => {
 // ── MODEL LOADING ──────────────────────────────────────────────────────────
 
 async function initModel() {
-    // Dynamic import — onnxruntime-web is loaded only inside the worker.
-    // Use the bundled version that includes WASM backend inline.
-    const ort = await import('onnxruntime-web');
+    // Static import used instead of dynamic to avoid registerBackend undefined error
 
     // Point to the WASM/MJS files in public/ort-wasm/ (served in both dev and prod)
     ort.env.wasm.wasmPaths = '/ort-wasm/';
@@ -73,20 +72,9 @@ async function initModel() {
     // that break Monaco editor workers and cross-origin font loading.
     ort.env.wasm.numThreads = 1;
 
-    // Prefer WebGPU, fall back to WASM
-    const providers = [];
-    if (typeof navigator !== 'undefined' && navigator.gpu) {
-        try {
-            const adapter = await Promise.race([
-                navigator.gpu.requestAdapter(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('WebGPU timeout')), 4000))
-            ]);
-            if (adapter) providers.push('webgpu');
-        } catch {
-            // WebGPU unavailable or timed out
-        }
-    }
-    providers.push('wasm');
+    // WASM-only — JSEP (WebGPU) files are excluded from the build to stay
+    // under Cloudflare Pages' 25 MiB per-file limit.
+    const providers = ['wasm'];
 
     const modelBuffer = await loadModelFromCacheOrNetwork();
 
@@ -125,8 +113,6 @@ async function loadModelFromCacheOrNetwork() {
 // ── INFERENCE ──────────────────────────────────────────────────────────────
 
 async function detect(imageBitmap) {
-    const ort = await import('onnxruntime-web');
-
     // Resize to 640x640 and extract pixel data
     const canvas = new OffscreenCanvas(MODEL_SIZE, MODEL_SIZE);
     const ctx = canvas.getContext('2d');

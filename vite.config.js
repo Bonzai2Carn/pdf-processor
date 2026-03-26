@@ -11,6 +11,24 @@ const monacoEditorPlugin = require('vite-plugin-monaco-editor').default
 const ortDistDir = path.resolve(__dirname, 'node_modules/onnxruntime-web/dist')
 
 /**
+ * Strip JSEP (WebGPU) and asyncify WASM variants from the bundle.
+ * onnxruntime-web references them via new URL() patterns so Vite picks them up
+ * as assets even when we never use those backends. Both exceed Cloudflare Pages'
+ * 25 MiB per-file limit and are unnecessary since we use WASM + numThreads=1.
+ */
+function stripOrtHeavyAssets() {
+    const STRIP = /ort-wasm.*(jsep|asyncify).*\.wasm$/
+    return {
+        name: 'strip-ort-heavy-assets',
+        generateBundle(_, bundle) {
+            for (const key of Object.keys(bundle)) {
+                if (STRIP.test(key)) delete bundle[key]
+            }
+        },
+    }
+}
+
+/**
  * Tiny Vite plugin that serves ONNX Runtime WASM/MJS files from node_modules
  * at /ort-wasm/ during dev. In production, vite-plugin-static-copy handles it.
  */
@@ -50,7 +68,7 @@ export default defineConfig({
     optimizeDeps: {
         // Prevent Vite from pre-bundling WASM-heavy modules — they must be
         // loaded natively so the browser can stream-compile .wasm binaries.
-        exclude: ['mupdf', 'onnxruntime-web'],
+        exclude: ['mupdf', 'onnxruntime-web', '@huggingface/transformers'],
     },
     build: {
         outDir: '../dist',
@@ -63,6 +81,7 @@ export default defineConfig({
     },
     plugins: [
         wasm(),
+        stripOrtHeavyAssets(),
         monacoEditorPlugin({
             languageWorkers: ['editorWorkerService', 'html', 'css']
         }),
@@ -72,7 +91,8 @@ export default defineConfig({
         viteStaticCopy({
             targets: [
                 {
-                    src: '../node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded*.{wasm,mjs}',
+                    // Exclude the asyncify variant (25.9 MiB) — not needed since numThreads=1
+                    src: '../node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.{wasm,mjs}',
                     dest: 'ort-wasm',
                 },
                 // OpenCV.js WASM goes in src/public/wasm/ when ready
