@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import path from 'path'
 import { createRequire } from 'module'
+import wasm from 'vite-plugin-wasm'
 
 const require = createRequire(import.meta.url)
 const monacoEditorPlugin = require('vite-plugin-monaco-editor').default
@@ -11,13 +12,19 @@ export default defineConfig({
         port: 5173,
         open: true
     },
+    optimizeDeps: {
+        // Prevent Vite from pre-bundling the mupdf WASM module — it must be
+        // loaded natively so the browser can stream-compile the .wasm binary.
+        exclude: ['mupdf'],
+    },
     build: {
-        outDir: path.resolve(__dirname, 'dist'),
+        outDir: '../dist',
         emptyOutDir: true
     },
     plugins: [
+        wasm(),
         monacoEditorPlugin({
             languageWorkers: ['editorWorkerService', 'html', 'css']
-        })
+        }),
     ]
 })

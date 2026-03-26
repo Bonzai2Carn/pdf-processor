@@ -13,11 +13,16 @@ export function clusterIntoLines(items) {
 
     for (const item of items) {
         const tol = (item.fontSize || 10) * 0.35;
-        const existing = lines.find(l => Math.abs(l.baselineY - item.y) <= tol);
-        if (existing) {
-            existing.items.push(item);
-            existing.maxFontSize = Math.max(existing.maxFontSize, item.fontSize);
-            existing.minX = Math.min(existing.minX, item.x);
+        // Find the closest existing line within tolerance (not just the first match)
+        let best = null, bestDist = Infinity;
+        for (const l of lines) {
+            const dist = Math.abs(l.baselineY - item.y);
+            if (dist <= tol && dist < bestDist) { best = l; bestDist = dist; }
+        }
+        if (best) {
+            best.items.push(item);
+            best.maxFontSize = Math.max(best.maxFontSize, item.fontSize);
+            best.minX = Math.min(best.minX, item.x);
         } else {
             lines.push({
                 baselineY: item.y,
@@ -69,7 +74,9 @@ export function groupIntoParagraphs(lines) {
         const curr = lines[i];
         const gap = prev.baselineY - curr.baselineY;
         const isLargeGap = gap > normalSpacing * 1.5;
-        const indentChange = Math.abs(curr.minX - prev.minX) > 20;
+        // Require a meaningful indent shift (≥40px) to avoid false breaks from
+        // minor alignment differences in justified or mixed-size text
+        const indentChange = Math.abs(curr.minX - prev.minX) > Math.max(normalSpacing * 2, 40);
         const prevWasHeading = isHeadingCandidate(prev);
 
         if (isLargeGap || indentChange || prevWasHeading) {

@@ -50,6 +50,7 @@ export function buildHTML(paragraphs, tableRegions, allLines, stats) {
         }
 
         const tag = classifyParagraph(para, bodyFontSize, uniqueSizes);
+        if (!tag) continue; // empty or whitespace-only paragraph
 
         if (tag === 'li') {
             const currentListType = BULLET_RE.test(para.text) && /^\d/.test(para.text.trim()) ? 'ol' : 'ul';

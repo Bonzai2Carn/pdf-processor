@@ -31,16 +31,20 @@ async function handleFile1(file) {
     showStatus('Loading PDF…');
     try {
         const buf = await file.arrayBuffer();
-        state.pdf1.doc = await pdfjsLib.getDocument({ data: buf }).promise;
+        // pdfjs transfers (detaches) the ArrayBuffer when posting to its worker,
+        // so give pdf-parse an independent copy made before pdfjs consumes buf.
+        state.pdf1.bytes = new Uint8Array(buf.slice(0));
+        state.pdf1.doc   = await pdfjsLib.getDocument({ data: buf }).promise;
 
         // PDF View — render canvas
         const wrappers = await renderPDFToCanvas(state.pdf1.doc, 'pdf-canvas-container');
         registerPages(wrappers, state.pdf1.doc.numPages);
 
-        // Extraction
-        showStatus('Extracting HTML…', `0 / ${state.pdf1.doc.numPages} pages`);
-        state.pdf1.extractedHTML = await extractSemanticHTML(state.pdf1.doc, (done, total) => {
-            showStatus('Extracting HTML…', `${done} / ${total} pages`);
+        // Extraction (pdf-parse takes raw bytes)
+        showStatus('Extracting HTML…');
+        state.pdf1.extractedHTML = await extractSemanticHTML(state.pdf1.bytes, (stage, done, total) => {
+            if (total) showStatus('Extracting HTML…', `${done} / ${total} pages`);
+            else       showStatus(`Extracting: ${stage}…`);
         });
 
         // HTML View
@@ -74,11 +78,13 @@ async function handleFile2(file) {
     showStatus('Loading comparison PDF…');
     try {
         const buf = await file.arrayBuffer();
-        state.pdf2.doc = await pdfjsLib.getDocument({ data: buf }).promise;
+        state.pdf2.bytes = new Uint8Array(buf.slice(0));
+        state.pdf2.doc   = await pdfjsLib.getDocument({ data: buf }).promise;
 
-        showStatus('Extracting comparison HTML…', `0 / ${state.pdf2.doc.numPages} pages`);
-        state.pdf2.extractedHTML = await extractSemanticHTML(state.pdf2.doc, (done, total) => {
-            showStatus('Extracting comparison HTML…', `${done} / ${total} pages`);
+        showStatus('Extracting comparison HTML…');
+        state.pdf2.extractedHTML = await extractSemanticHTML(state.pdf2.bytes, (stage, done, total) => {
+            if (total) showStatus('Extracting comparison HTML…', `${done} / ${total} pages`);
+            else       showStatus(`Extracting: ${stage}…`);
         });
 
         refreshCodeDiff();

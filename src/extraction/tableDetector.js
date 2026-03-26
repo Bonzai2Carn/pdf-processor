@@ -31,19 +31,19 @@ const MIN_LINE_LENGTH = 10; // px — ignore tiny strokes
 /**
  * Detect tables on a page.
  *
- * @param {import('pdfjs-dist').PDFPageProxy} page     - pdfjs page proxy
- * @param {Array}  lines                               - from lineClusterer
+ * @param {{ fnArray: number[], argsArray: any[] }} opList  - pre-fetched operator list (shared with xycut)
+ * @param {Array}  lines                                    - from lineClusterer
  * @param {number} pageWidth
  * @param {number} pageHeight
- * @returns {Promise<Array<{startIdx:number, endIdx:number, html:string}>>}
+ * @returns {Array<{startIdx:number, endIdx:number, html:string}>}
  */
-export async function detectTables(page, lines, pageWidth, pageHeight) {
+export function detectTables(opList, lines, pageWidth, pageHeight) {
     // Strategy A — drawn grid lines
     try {
-        const gridTables = await detectFromOperatorList(page, lines, pageWidth, pageHeight);
+        const gridTables = detectFromOperatorList(opList, lines, pageWidth, pageHeight);
         if (gridTables.length > 0) return gridTables;
     } catch {
-        // Operator list failed (unusual), fall through to heuristic
+        // Operator list parsing failed, fall through to heuristic
     }
 
     // Strategy B — column-alignment heuristic
@@ -52,8 +52,7 @@ export async function detectTables(page, lines, pageWidth, pageHeight) {
 
 // ── STRATEGY A: OPERATOR LIST ─────────────────────────────────────────────
 
-async function detectFromOperatorList(page, lines, pageWidth, pageHeight) {
-    const opList = await page.getOperatorList();
+function detectFromOperatorList(opList, lines, pageWidth, pageHeight) {
     const { fnArray, argsArray } = opList;
 
     // Collect path segments in current-transform coordinates
