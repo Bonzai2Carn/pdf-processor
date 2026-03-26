@@ -11,7 +11,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 import { state } from '../state.js';
 import { renderPDFToCanvas } from './pdfCanvas.js';
 import { extractSemanticHTML } from '../extraction/pipeline.js';
-import { extractWithAI, initLayoutWorker } from '../extraction/aiPipeline.js';
 import { showStatus, hideStatus, enableDiffTab, disableDiffTab } from './viewController.js';
 import { registerPages } from './pageNav.js';
 import { markDiffDirty } from './visualDiff.js';
@@ -41,28 +40,12 @@ async function handleFile1(file) {
         const wrappers = await renderPDFToCanvas(state.pdf1.doc, 'pdf-canvas-container');
         registerPages(wrappers, state.pdf1.doc.numPages);
 
-        // Extraction — AI pipeline with legacy fallback
+        // Extraction (pdf-parse takes raw bytes)
         showStatus('Extracting HTML…');
-        const progressCb = (stage, done, total) => {
+        state.pdf1.extractedHTML = await extractSemanticHTML(state.pdf1.bytes, (stage, done, total) => {
             if (total) showStatus('Extracting HTML…', `${done} / ${total} pages`);
             else       showStatus(`Extracting: ${stage}…`);
-        };
-
-        if (state.useAIPipeline) {
-            try {
-                const result = await extractWithAI(state.pdf1.bytes, progressCb);
-                state.pdf1.extractedHTML = result.html;
-                state.pdf1.jsonTree = result.jsonTree;
-            } catch (aiErr) {
-                console.warn('AI pipeline failed, falling back to legacy:', aiErr);
-                showToast('AI extraction unavailable — using legacy pipeline', 'warning');
-                state.pdf1.extractedHTML = await extractSemanticHTML(state.pdf1.bytes, progressCb);
-                state.pdf1.jsonTree = null;
-            }
-        } else {
-            state.pdf1.extractedHTML = await extractSemanticHTML(state.pdf1.bytes, progressCb);
-            state.pdf1.jsonTree = null;
-        }
+        });
 
         // HTML View
         populateHTMLPreview(state.pdf1.extractedHTML, 'html-preview');
@@ -99,25 +82,10 @@ async function handleFile2(file) {
         state.pdf2.doc   = await pdfjsLib.getDocument({ data: buf }).promise;
 
         showStatus('Extracting comparison HTML…');
-        const progressCb2 = (stage, done, total) => {
+        state.pdf2.extractedHTML = await extractSemanticHTML(state.pdf2.bytes, (stage, done, total) => {
             if (total) showStatus('Extracting comparison HTML…', `${done} / ${total} pages`);
             else       showStatus(`Extracting: ${stage}…`);
-        };
-
-        if (state.useAIPipeline) {
-            try {
-                const result = await extractWithAI(state.pdf2.bytes, progressCb2);
-                state.pdf2.extractedHTML = result.html;
-                state.pdf2.jsonTree = result.jsonTree;
-            } catch (aiErr) {
-                console.warn('AI pipeline failed for PDF 2, falling back to legacy:', aiErr);
-                state.pdf2.extractedHTML = await extractSemanticHTML(state.pdf2.bytes, progressCb2);
-                state.pdf2.jsonTree = null;
-            }
-        } else {
-            state.pdf2.extractedHTML = await extractSemanticHTML(state.pdf2.bytes, progressCb2);
-            state.pdf2.jsonTree = null;
-        }
+        });
 
         refreshCodeDiff();
         enableDiffTab();
@@ -178,32 +146,4 @@ export function exportExtractedPDF() {
     const preview = document.getElementById('html-preview');
     if (!preview?.innerHTML?.trim()) { showToast('No content to export', 'error'); return; }
     window.print();
-}
-
-export async function exportExtractedDOCX() {
-    const tree = state.pdf1.jsonTree;
-    if (!tree) {
-        showToast('No JSON tree available — re-extract with AI pipeline enabled', 'error');
-        return;
-    }
-
-    showStatus('Generating DOCX…');
-    try {
-        const { treeToDocxBlob } = await import('../extraction/treeToDocx.js');
-        const { collectDocStats, openDocument } = await import('../extraction/mupdfExtractor.js');
-        const { doc } = openDocument(state.pdf1.bytes);
-        const stats = collectDocStats(doc);
-
-        const blob = await treeToDocxBlob(tree, stats);
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = (state.pdf1.file?.name?.replace(/\.pdf$/i, '') || 'extracted') + '.docx';
-        a.click();
-        URL.revokeObjectURL(a.href);
-        showToast('DOCX exported successfully', 'success');
-    } catch (err) {
-        console.error('DOCX export failed:', err);
-        showToast('DOCX export failed: ' + err.message, 'error');
-    }
-    hideStatus();
 }

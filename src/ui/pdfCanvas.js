@@ -48,10 +48,45 @@ export async function renderPDFToCanvas(pdfDoc, containerId = 'pdf-canvas-contai
         container.appendChild(wrapper);
         wrappers.push(wrapper);
 
-        // Render canvas perfectly via native PDF.js
+        // Render canvas (graphics only)
         const ctx = canvas.getContext('2d');
+        // Suppress text rendering so it doesn't double-draw
+        const origFill   = ctx.fillText.bind(ctx);
+        const origStroke = ctx.strokeText.bind(ctx);
+        ctx.fillText   = () => {};
+        ctx.strokeText = () => {};
         await page.render({ canvasContext: ctx, viewport }).promise;
+        ctx.fillText   = origFill;
+        ctx.strokeText = origStroke;
+
+        // Build transparent text overlay for selection/editing
+        const textContent = await page.getTextContent();
+        buildTextLayer(textContent, viewport, textLayer);
     }
 
     return wrappers;
+}
+
+function buildTextLayer(textContent, viewport, layerEl) {
+    for (const item of textContent.items) {
+        if (!item.str) continue;
+        const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+
+        const scaleX = Math.hypot(tx[0], tx[1]);
+        const scaleY = Math.hypot(tx[2], tx[3]);
+        const fontSize = scaleY;
+        const angle    = Math.atan2(tx[1], tx[0]);
+        const x = tx[4];
+        const y = tx[5] - fontSize;
+
+        const span = document.createElement('span');
+        span.textContent = item.str;
+        span.style.cssText = `
+            left: ${x}px;
+            top: ${y}px;
+            font-size: ${fontSize}px;
+            transform: rotate(${angle}rad) scaleX(${scaleX / (scaleY || 1)});
+        `;
+        layerEl.appendChild(span);
+    }
 }
