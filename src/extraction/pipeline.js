@@ -4,12 +4,12 @@
  * Orchestrates PDF → semantic HTML extraction via MuPDF.js + spatial pipeline.
  *
  * Stage order per page:
- *   1. mupdfExtractor  — spatial items (str, x, y, fontSize, isBold, …)
- *   2. headerFooterDetector — strip repeated top/bottom zone text
- *   3. columnDetector  — split items into per-column groups
- *   4. lineClusterer   — group items → lines → paragraphs (per column)
- *   5. tableDetector   — find grid/alignment tables (per column)
- *   6. htmlBuilder     — emit semantic HTML (per column)
+ *   1. mupdfExtractor ; spatial items (str, x, y, fontSize, isBold, …)
+ *   2. headerFooterDetector; strip repeated top/bottom zone text
+ *   3. columnDetector ; split items into per-column groups
+ *   4. lineClusterer  ; group items → lines → paragraphs (per column)
+ *   5. tableDetector  ; find grid/alignment tables (per column)
+ *   6. htmlBuilder    ; emit semantic HTML (per column)
  *
  * Header/footer detection is two-pass:
  *   Pre-pass: accumulate candidates across all pages.
@@ -81,7 +81,7 @@ export async function extractSemanticHTML(pdfBytes, onProgress) {
             if (!lines.length) continue;
 
             // Stage 5: detect tables
-            // opList is null — Strategy A (operator-list) is bypassed; Strategy B
+            // opList is null; Strategy A (operator-list) is bypassed; Strategy B
             // (column-alignment heuristic) handles tables automatically.
             const tableRegions = detectTables(null, lines, pageWidth, pageHeight);
 

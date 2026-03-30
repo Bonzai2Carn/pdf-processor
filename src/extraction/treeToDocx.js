@@ -75,7 +75,7 @@ function regionToDocxElements(region, stats) {
             return [buildDocxTable(region)];
 
         case 'picture':
-            // Placeholder — actual image embedding requires the image data
+            // Placeholder; actual image embedding requires the image data
             return [new Paragraph({
                 children: [new TextRun({ text: '[Image]', italics: true, color: '888888' })],
             })];
@@ -158,7 +158,7 @@ function buildTextParagraph(region) {
 function buildDocxTable(region) {
     const grid = region.grid;
     if (!grid || !grid.cells || !grid.cells.length) {
-        // No grid — render as plain paragraph
+        // No grid; render as plain paragraph
         return new Paragraph({
             children: [new TextRun({ text: region.text || '' })],
         });

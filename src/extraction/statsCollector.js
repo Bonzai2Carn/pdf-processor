@@ -1,5 +1,5 @@
 /**
- * statsCollector.js — Stage 1
+ * statsCollector.js; Stage 1
  * Samples all pages and builds a font-size histogram.
  * Returns { bodyFontSize, uniqueSizes } where uniqueSizes is sorted largest→smallest.
  */

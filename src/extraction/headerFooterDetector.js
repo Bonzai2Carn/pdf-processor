@@ -1,5 +1,5 @@
 /**
- * headerFooterDetector.js — Stage 3
+ * headerFooterDetector.js; Stage 3
  * Items in top 8% or bottom 8% of page height that appear on ≥60% of pages
  * with identical or numerically-incrementing text are classified as headers/footers.
  * Returns { bodyItems, headerTexts, footerTexts }.

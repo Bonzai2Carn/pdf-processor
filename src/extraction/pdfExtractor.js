@@ -29,13 +29,13 @@ function ensureWorker() {
  * Extract per-page text with line breaks preserved.
  *
  * getText() is called with:
- *   lineEnforce: true    — inserts \n when baseline Y shifts (respects natural lines)
- *   lineThreshold: 5     — Y delta (viewport px) that triggers a new line
+ *   lineEnforce: true   ; inserts \n when baseline Y shifts (respects natural lines)
+ *   lineThreshold: 5    ; Y delta (viewport px) that triggers a new line
  *
  * The raw text per page is then split into lines and returned alongside the
  * full page string so callers can choose which form to work with.
  *
- * @param {Uint8Array} bytes  — raw PDF bytes
+ * @param {Uint8Array} bytes ; raw PDF bytes
  * @returns {Promise<{pages: Array<{num:number, lines:string[], rawText:string}>, total:number}>}
  */
 export async function extractText(bytes) {

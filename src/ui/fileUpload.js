@@ -36,7 +36,7 @@ async function handleFile1(file) {
         state.pdf1.bytes = new Uint8Array(buf.slice(0));
         state.pdf1.doc   = await pdfjsLib.getDocument({ data: buf }).promise;
 
-        // PDF View — render canvas
+        // PDF View; render canvas
         const wrappers = await renderPDFToCanvas(state.pdf1.doc, 'pdf-canvas-container');
         registerPages(wrappers, state.pdf1.doc.numPages);
 
@@ -130,7 +130,7 @@ function setLoaded(inputId) {
 
 export function downloadExtractedHTML() {
     const html = state.pdf1.extractedHTML;
-    if (!html) { showToast('No extracted HTML yet — load a PDF first', 'error'); return; }
+    if (!html) { showToast('No extracted HTML yet; load a PDF first', 'error'); return; }
     const blob = new Blob(
         [`<!doctype html><html><head><meta charset="utf-8"/></head><body>\n${html}\n</body></html>`],
         { type: 'text/html' }

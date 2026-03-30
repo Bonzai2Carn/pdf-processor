@@ -119,7 +119,7 @@ export function extractPageImageBBoxes(doc, pageIndex) {
 
 /**
  * Collect document-wide font statistics by sampling up to 10 pages.
- * Returns { bodyFontSize, uniqueSizes } — same shape as the old statsCollector.js.
+ * Returns { bodyFontSize, uniqueSizes }; same shape as the old statsCollector.js.
  *
  * @param {object} doc
  * @returns {{ bodyFontSize: number, uniqueSizes: number[] }}

@@ -1,5 +1,5 @@
 /**
- * lineClusterer.js — Stage 5
+ * lineClusterer.js; Stage 5
  * Groups enriched items into lines (by Y proximity) then groups lines into paragraphs.
  * Returns an array of paragraph objects: { items, text, tag, indent }
  */

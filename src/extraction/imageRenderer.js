@@ -22,7 +22,7 @@
 
 /**
  * @param {import('pdfjs-dist').PDFPageProxy} page
- * @param {Array<{x,y,width,height,name}>}    imageBBoxes  — PDF coord space
+ * @param {Array<{x,y,width,height,name}>}    imageBBoxes ; PDF coord space
  * @param {number} [scale=1.5]
  * @returns {Promise<Array<{bbox, dataUrl:string}>>}
  */
@@ -39,7 +39,7 @@ export async function renderImageRegions(page, imageBBoxes, scale = 1.5) {
     const ctx = canvas.getContext('2d');
 
     // Suppress text rendering so only graphics/raster images appear.
-    // pdfjs calls these directly on the context object — override them before render.
+    // pdfjs calls these directly on the context object; override them before render.
     const noop = () => {};
     ctx.fillText         = noop;
     ctx.strokeText       = noop;

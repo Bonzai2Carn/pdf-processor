@@ -183,6 +183,10 @@
     <!-- ── TOAST ──────────────────────────────────────────────────────── -->
     <div id="toast" class="toast" hidden></div>
 
+    <!-- OS Bridge (no-op when standalone, connects to kernel when in iframe) -->
+    <script src="/assets/os/contracts.js"></script>
+    <script src="/assets/os/bridge.js"></script>
+
     <script type="module" src="./app.js"></script>
 </body>
 </html>

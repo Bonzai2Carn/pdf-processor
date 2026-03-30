@@ -1,5 +1,5 @@
 /**
- * columnDetector.js — Stage 4
+ * columnDetector.js; Stage 4
  * Detects multi-column layouts by checking for X-coverage gaps in the middle of the page.
  * Returns an array of item groups, one per column, each sorted top-to-bottom.
  */

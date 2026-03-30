@@ -78,7 +78,7 @@ export async function getModelBuffer(onProgress) {
             headers: { 'Content-Type': 'application/octet-stream' },
         }));
     } catch {
-        // Caching failed — continue without it
+        // Caching failed; continue without it
     }
 
     return buffer.buffer;

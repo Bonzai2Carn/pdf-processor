@@ -1,5 +1,5 @@
 /**
- * toast.js — lightweight toast notification
+ * toast.js; lightweight toast notification
  */
 
 let _timer = null;

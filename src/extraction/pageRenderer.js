@@ -18,7 +18,7 @@ const DEFAULT_SCALE = 2.0;
 
 /**
  * Load a pdfjs document from raw bytes.
- * Cached separately from MuPDF — pdfjs is used only for canvas rendering.
+ * Cached separately from MuPDF; pdfjs is used only for canvas rendering.
  *
  * @param {Uint8Array} pdfBytes
  * @returns {Promise<import('pdfjs-dist').PDFDocumentProxy>}

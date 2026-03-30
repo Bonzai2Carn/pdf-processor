@@ -13,7 +13,7 @@ export default defineConfig({
         open: true
     },
     optimizeDeps: {
-        // Prevent Vite from pre-bundling the mupdf WASM module — it must be
+        // Prevent Vite from pre-bundling the mupdf WASM module; it must be
         // loaded natively so the browser can stream-compile the .wasm binary.
         exclude: ['mupdf'],
     },

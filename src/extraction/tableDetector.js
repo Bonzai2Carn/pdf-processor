@@ -1,5 +1,5 @@
 /**
- * tableDetector.js — Stage 6
+ * tableDetector.js; Stage 6
  *
  * Two-strategy table detection:
  *
@@ -24,7 +24,7 @@ const OPS = {
     transform: 12,
 };
 
-const MIN_LINE_LENGTH = 10; // px — ignore tiny strokes
+const MIN_LINE_LENGTH = 10; // px; ignore tiny strokes
 
 // ── PUBLIC API ─────────────────────────────────────────────────────────────
 
@@ -38,7 +38,7 @@ const MIN_LINE_LENGTH = 10; // px — ignore tiny strokes
  * @returns {Array<{startIdx:number, endIdx:number, html:string}>}
  */
 export function detectTables(opList, lines, pageWidth, pageHeight) {
-    // Strategy A — drawn grid lines
+    // Strategy A; drawn grid lines
     try {
         const gridTables = detectFromOperatorList(opList, lines, pageWidth, pageHeight);
         if (gridTables.length > 0) return gridTables;
@@ -46,7 +46,7 @@ export function detectTables(opList, lines, pageWidth, pageHeight) {
         // Operator list parsing failed, fall through to heuristic
     }
 
-    // Strategy B — column-alignment heuristic
+    // Strategy B; column-alignment heuristic
     return detectFromAlignment(lines, pageWidth);
 }
 
@@ -184,10 +184,10 @@ function clusterValues(values, tol) {
 function buildTablesFromGrid(rowY, colX, lines, _pageHeight) {
     // PDF y=0 is bottom; rowY may be in PDF coords. Convert to viewport coords if needed.
     // lines from lineClusterer are also in PDF coords (raw y from transform[5]).
-    // rowY comes from operator coords — after applyTransform they should be viewport coords
+    // rowY comes from operator coords; after applyTransform they should be viewport coords
     // (since viewport.transform is applied during canvas render, not here).
     // For consistency: rowY is in the same space as line.baselineY (PDF raw coords)
-    // ONLY if we didn't apply viewport.transform. We didn't — we used raw coords.
+    // ONLY if we didn't apply viewport.transform. We didn't; we used raw coords.
     // So rowY is raw PDF coords (y=0 at bottom of page). lines.baselineY is also raw.
 
     const rowTol = (rowY[1] - rowY[0]) * 0.3 || 3;

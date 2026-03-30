@@ -1,5 +1,5 @@
 /**
- * itemEnricher.js — Stage 2
+ * itemEnricher.js; Stage 2
  * Adds computed properties to raw pdfjs text items.
  * Returns enriched items sorted top-to-bottom, left-to-right in PDF coordinate space.
  */

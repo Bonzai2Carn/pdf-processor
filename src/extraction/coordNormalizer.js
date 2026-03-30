@@ -2,9 +2,9 @@
  * coordNormalizer.js
  *
  * Coordinate transforms between three spaces:
- *   1. PDF space   — MuPDF items: y=0 at BOTTOM, increasing upward.
- *   2. Image space — rendered canvas / AI model input: y=0 at TOP, increasing down.
- *   3. Model space — 640x640 normalized input to YOLOv8.
+ *   1. PDF space  ; MuPDF items: y=0 at BOTTOM, increasing upward.
+ *   2. Image space; rendered canvas / AI model input: y=0 at TOP, increasing down.
+ *   3. Model space; 640x640 normalized input to YOLOv8.
  *
  * All transforms are pure linear maps (no rotation).
  */

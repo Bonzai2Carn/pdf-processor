@@ -11,7 +11,7 @@ let _currentPage = 1;
 let _pageWrappers = []; // Array of .page-wrapper elements in current canvas container
 
 export function initToolbar() {
-    // Format commands — apply to whatever contentEditable has focus
+    // Format commands; apply to whatever contentEditable has focus
     document.getElementById('btn-bold')?.addEventListener('click', () => fmt('bold'));
     document.getElementById('btn-italic')?.addEventListener('click', () => fmt('italic'));
     document.getElementById('btn-underline')?.addEventListener('click', () => fmt('underline'));

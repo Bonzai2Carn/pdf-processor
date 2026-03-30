@@ -55,7 +55,7 @@ function pageRegionsToHTML(regions, stats) {
         // Skip headers/footers
         if (label === 'page-header' || label === 'page-footer') continue;
 
-        // Handle list items — buffer them for grouping
+        // Handle list items; buffer them for grouping
         if (label === 'list-item') {
             const text = region.text || '';
             const currentType = BULLET_RE.test(text) && /^\d/.test(text.trim()) ? 'ol' : 'ul';
@@ -109,7 +109,7 @@ function pageRegionsToHTML(regions, stats) {
                 break;
 
             default:
-                // Unknown label — treat as paragraph
+                // Unknown label; treat as paragraph
                 if (region.text?.trim()) {
                     parts.push(`<p>${escapeHTML(region.text)}</p>`);
                 }
@@ -169,7 +169,7 @@ function buildParagraph(region) {
 function buildTable(region) {
     const grid = region.grid;
     if (!grid || !grid.cells || !grid.cells.length) {
-        // No grid data — fall back to rendering text as paragraph
+        // No grid data; fall back to rendering text as paragraph
         return region.text?.trim() ? `<p>${escapeHTML(region.text)}</p>` : '';
     }
 

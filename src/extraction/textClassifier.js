@@ -42,7 +42,7 @@ const TITLE_CASE_RE = /^(?:[A-Z][a-z]*(?:\s+(?:a|an|the|of|in|on|at|to|for|and|o
 // ── Public API ─────────────────────────────────────────────────────────────
 
 /**
- * @param {string[]} lines  — raw lines for one page from pdf-parse getText()
+ * @param {string[]} lines ; raw lines for one page from pdf-parse getText()
  * @param {{medianLineLen:number, shortThreshold:number}} stats
  * @returns {string} HTML
  */

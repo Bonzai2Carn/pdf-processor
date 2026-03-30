@@ -1,6 +1,6 @@
 /**
  * state.js
- * Shared application state. Plain object — no framework needed.
+ * Shared application state. Plain object; no framework needed.
  */
 
 export const state = {

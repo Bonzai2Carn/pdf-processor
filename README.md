@@ -1,4 +1,4 @@
-# PDF-to-Code — editable multi-page converter
+# PDF-to-Code; editable multi-page converter
 
 This project provides an in-browser editable multi-page canvas for converting PDFs into editable HTML, extracting tables, and exporting to HTML/PHP/PDF.
 

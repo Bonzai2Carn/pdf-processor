@@ -18,7 +18,7 @@ const MAX_DEPTH = 10;
 // pdfjs 2.x operator codes (stable across 2.x releases)
 const OP_SAVE         = 1;   // q
 const OP_RESTORE      = 2;   // Q
-const OP_CONCAT       = 12;  // cm  — sets new CTM
+const OP_CONCAT       = 12;  // cm ; sets new CTM
 const OP_PAINT_JPEG   = 82;  // paintJpegXObject
 const OP_PAINT_IMAGE  = 85;  // paintImageXObject
 const OP_PAINT_INLINE = 86;  // paintInlineImageXObject
@@ -96,7 +96,7 @@ export function xyCut(items, imageBBoxes, bbox, stats, depth = 0) {
         return makeLeaf(items, imageBBoxes, bbox);
     }
 
-    // Minimum gap thresholds — tune these for accuracy vs. over-splitting
+    // Minimum gap thresholds; tune these for accuracy vs. over-splitting
     const minVGap = Math.max(bbox.width  * 0.020, stats.bodyFontSize * 0.6); // column separator
     const minHGap = Math.max(bbox.height * 0.003, stats.bodyFontSize * 0.35); // section separator
 

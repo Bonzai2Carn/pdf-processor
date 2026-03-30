@@ -72,7 +72,7 @@ async function initModel() {
     // that break Monaco editor workers and cross-origin font loading.
     ort.env.wasm.numThreads = 1;
 
-    // WASM-only — JSEP (WebGPU) files are excluded from the build to stay
+    // WASM-only; JSEP (WebGPU) files are excluded from the build to stay
     // under Cloudflare Pages' 25 MiB per-file limit.
     const providers = ['wasm'];
 
@@ -104,7 +104,7 @@ async function loadModelFromCacheOrNetwork() {
         const cache = await caches.open(CACHE_NAME);
         await cache.put(MODEL_URL, response.clone());
     } catch {
-        // Caching failed — not critical
+        // Caching failed; not critical
     }
 
     return new Uint8Array(await response.arrayBuffer());

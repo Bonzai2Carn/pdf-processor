@@ -1,5 +1,5 @@
 /**
- * htmlBuilder.js — Stage 7
+ * htmlBuilder.js; Stage 7
  * Converts classified paragraphs and detected table regions into semantic HTML.
  */
 

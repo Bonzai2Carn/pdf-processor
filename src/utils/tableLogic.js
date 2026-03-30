@@ -1,9 +1,9 @@
 /**
- * tableLogic.js (rewritten — vanilla ESM, no jQuery)
+ * tableLogic.js (rewritten; vanilla ESM, no jQuery)
  *
  * Post-extraction DOM utilities for rendered HTML tables:
- *   - VisualGridMapper  — maps <td>/<th> cells to a 2D grid (handles rowspan/colspan)
- *   - Crosshair highlight — row + column highlight on hover
+ *   - VisualGridMapper ; maps <td>/<th> cells to a 2D grid (handles rowspan/colspan)
+ *   - Crosshair highlight; row + column highlight on hover
  *   - Accordion toggles
  *   - Column sp-option visibility toggles
  *   - Table transpose

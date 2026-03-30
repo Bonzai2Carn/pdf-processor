@@ -1,5 +1,5 @@
 /**
- * app.js — main entry point
+ * app.js; main entry point
  */
 
 import DOMPurify from 'dompurify';

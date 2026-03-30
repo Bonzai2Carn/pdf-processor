@@ -1,6 +1,6 @@
 /**
  * visualDiff.js
- * Visual Diff view — renders the PDF canvas on the left (with editable text layer)
+ * Visual Diff view; renders the PDF canvas on the left (with editable text layer)
  * and the extracted HTML on the right (contentEditable).
  * Both sides are editable so users can manually fix extraction errors.
  */

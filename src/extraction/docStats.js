@@ -7,8 +7,8 @@
  *
  * Returns:
  *   {
- *     medianLineLen  : number   — median non-empty line length (proxy for body width)
- *     shortThreshold : number   — lines shorter than this are heading candidates
+ *     medianLineLen  : number  ; median non-empty line length (proxy for body width)
+ *     shortThreshold : number  ; lines shorter than this are heading candidates
  *     totalLines     : number
  *   }
  */
@@ -32,7 +32,7 @@ export function collectDocStats(pages) {
 
     return {
         medianLineLen:  median,
-        // Lines at ≤60% of median width are "short" — heading candidates
+        // Lines at ≤60% of median width are "short"; heading candidates
         shortThreshold: Math.round(median * 0.60),
         totalLines:     lengths.length,
     };

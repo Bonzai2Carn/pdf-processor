@@ -51,6 +51,6 @@ function updateHTMLPreview(html) {
             : html;
         preview.innerHTML = clean;
     } catch {
-        // Silent — editor may produce incomplete HTML mid-type
+        // Silent; editor may produce incomplete HTML mid-type
     }
 }
