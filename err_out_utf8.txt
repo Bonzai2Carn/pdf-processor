@@ -1,0 +1,51 @@
+﻿Loading AI Model...
+Reading PDF bytes...
+Opening mupdf doc...
+Loaded page 0.
+Rendered pixmap: 1275x1650
+Running Docling AI inference...
+node : TEST SCRIPT ERROR: 
+TypeError: Cannot read 
+properties of undefined 
+(reading 'rows')
+At line:1 char:1
++ node test_extraction.js 
+> err_out.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (T  
+  EST SCRIPT ERR...read   
+ ing 'rows'):String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+    at closure._call (file
+:///C:/Users/Bonzai/Docume
+nts/Project/my-portfolio/t
+ools/pdf-processor/node_mo
+dules/@huggingface/transfo
+rmers/dist/transformers.no
+de.mjs:20702:37)
+    at closure [as 
+processor] (file:///C:/Use
+rs/Bonzai/Documents/Projec
+t/my-portfolio/tools/pdf-p
+rocessor/node_modules/@hug
+gingface/transformers/dist
+/transformers.node.mjs:163
+:24)
+    at closure._call (file
+:///C:/Users/Bonzai/Docume
+nts/Project/my-portfolio/t
+ools/pdf-processor/node_mo
+dules/@huggingface/transfo
+rmers/dist/transformers.no
+de.mjs:31962:41)
+    at async runTest (file
+:///C:/Users/Bonzai/Docume
+nts/Project/my-portfolio/t
+ools/pdf-processor/test_ex
+traction.js:30:24)
