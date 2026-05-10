@@ -17,7 +17,7 @@ const __dir = path.dirname(fileURLToPath(import.meta.url));
 pdfjsLib.GlobalWorkerOptions.workerSrc =
     path.join(__dir, 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs');
 
-const DL     = '/Users/bonzai-carn/Downloads/';
+const DL     = '../Downloads/';
 const OUTDIR = path.join(__dir, 'test-out');
 mkdirSync(OUTDIR, { recursive: true });
 
@@ -112,6 +112,154 @@ async function processPDF(filePath, slug, label) {
         diag.push({ pdf: slug, page: p,
             segs: { total: segments.length, h: hSegs.length, v: vSegs.length, diag: diagSegs.length },
             textItems: textContent.items.length, regions: regionSummary });
+
+        // ── Column layout trace for 59MN7C pages 1, 4, 6 ────────────────────
+        if (slug === '59MN7C' && (p === 1 || p === 4 || p === 6)) {
+            const vpT2 = viewport.transform;
+            const sc2X = Math.hypot(vpT2[0], vpT2[1]) || 1;
+            const sc2Y = Math.hypot(vpT2[2], vpT2[3]) || 1;
+
+            // Use UNCLAIMED items only (those not inside any region bbox)
+            // Table items span the full page horizontally and hide the column gutter.
+            const claimedIdx = new Set(regions.flatMap(r => r.textItemIndices || []));
+            const unclaimedItems = textContent.items
+                .map((item, idx) => {
+                    if (!item.str?.trim() || claimedIdx.has(idx)) return null;
+                    const vx = vpT2[0]*item.transform[4] + vpT2[2]*item.transform[5] + vpT2[4];
+                    const vy = vpT2[1]*item.transform[4] + vpT2[3]*item.transform[5] + vpT2[5];
+                    const fsPt = Math.abs(item.transform?.[3] || 12);
+                    const vw2 = (item.width || fsPt * 0.5 * (item.str?.length || 1)) * sc2X;
+                    return { vx, vy, vw: vw2, str: item.str.trim() };
+                })
+                .filter(Boolean);
+
+            // Group into Y-bands and count per-band X gap presence.
+            // A column gutter is an X range that appears in > 40% of bands.
+            const vFont0 = 12 * sc2Y; // fallback band tolerance
+            const sortedByY = [...unclaimedItems].sort((a,b) => a.vy - b.vy);
+            const bands2 = [];
+            for (const it of sortedByY) {
+                let b = bands2.find(b => Math.abs(b.y - it.vy) <= vFont0 * 0.45);
+                if (b) { b.items.push(it); b.y = (b.y*(b.items.length-1)+it.vy)/b.items.length; }
+                else bands2.push({ y: it.vy, items: [it] });
+            }
+
+            const w = Math.ceil(viewport.width);
+            const bandCount2 = new Float32Array(w);  // bands covering each pixel
+            for (const band of bands2) {
+                const seen = new Uint8Array(w);
+                for (const it of band.items) {
+                    const x1 = Math.max(0, Math.floor(it.vx));
+                    const x2 = Math.min(w-1, Math.ceil(it.vx + it.vw));
+                    for (let x = x1; x <= x2; x++) seen[x] = 1;
+                }
+                for (let x = 0; x < w; x++) bandCount2[x] += seen[x];
+            }
+
+            // Find X ranges where < 40% of bands have coverage (the gutter)
+            const threshold = bands2.length * 0.40;
+            const gutters2 = [];
+            let gs2 = null;
+            for (let x = Math.floor(w*0.1); x < w*0.9; x++) {
+                if (bandCount2[x] < threshold) { if (gs2===null) gs2=x; }
+                else if (gs2 !== null) { if (x-gs2 >= 10) gutters2.push({ x: gs2, w: x-gs2, mid: (gs2+x)/2 }); gs2=null; }
+            }
+            gutters2.sort((a,b) => b.w - a.w);
+
+            // Since all non-empty items ARE in regions, use REGION BBOXES instead.
+            // Project non-table region bboxes to find the column gutter.
+            const textRegions = regions.filter(r => r.type !== 'TABLE' && r.type !== 'IMAGE' && r.bbox);
+            const w2 = Math.ceil(viewport.width);
+            const regBandCount = new Float32Array(w2);
+
+            // For per-band gutter detection on regions: treat each region as a "band"
+            for (const r of textRegions) {
+                const seen = new Uint8Array(w2);
+                const x1 = Math.max(0, Math.floor(r.bbox.x));
+                const x2 = Math.min(w2-1, Math.ceil(r.bbox.x + r.bbox.w));
+                for (let x = x1; x <= x2; x++) seen[x] = 1;
+                for (let x = 0; x < w2; x++) regBandCount[x] += seen[x];
+            }
+
+            const regThreshold = textRegions.length * 0.40;
+            const regGutters = [];
+            let rgs = null;
+            for (let x = Math.floor(w2*0.1); x < w2*0.9; x++) {
+                if (regBandCount[x] < regThreshold) { if (rgs===null) rgs=x; }
+                else if (rgs !== null) { if (x-rgs >= 15) regGutters.push({ x: rgs, w: x-rgs, mid: (rgs+x)/2 }); rgs=null; }
+            }
+            regGutters.sort((a,b) => b.w - a.w);
+
+            console.log(`  [col-trace p${p}] vp.width=${w2}  textRegions=${textRegions.length}  gutters≥15px from region bboxes: ${regGutters.length}`);
+            regGutters.slice(0,3).forEach(g =>
+                console.log(`    gutter x=${Math.round(g.x)}–${Math.round(g.x+g.w)} (${Math.round(g.w)}px, mid=${Math.round(g.mid)})`));
+
+            // Directly invoke _detectPageColumns logic to print narrow band info
+        {
+            const vpT2 = viewport.transform;
+            const sc2X = Math.hypot(vpT2[0],vpT2[1])||1;
+            const sc2Y = Math.hypot(vpT2[2],vpT2[3])||1;
+            const sc = new PageScale(textMeta.filter(i=>i.str?.trim()), viewport);
+            const remaining = textMeta.filter(i=>i.str?.trim());
+            const sorted2 = [...remaining].sort((a,b)=>a.vy-b.vy);
+            const bands2=[];
+            for(const tm of sorted2){
+                let placed=false;
+                for(const b of bands2){if(Math.abs(b.y-tm.vy)<=sc.yBandTolPx){const n=b.items.length;b.y=(b.y*n+tm.vy)/(n+1);b.items.push(tm);placed=true;break;}}
+                if(!placed)bands2.push({y:tm.vy,items:[tm]});
+            }
+            const vw2=viewport.width;
+            let wideBands=0,narrowBands=0;
+            const cov=new Float32Array(Math.ceil(vw2));
+            for(const band of bands2){
+                let minX=Infinity,maxX=-Infinity;
+                for(const tm of band.items){if(tm.vx<minX)minX=tm.vx;const re=tm.vx+(tm.vWidth||0);if(re>maxX)maxX=re;}
+                if(maxX-minX>vw2*0.55){wideBands++;continue;}
+                narrowBands++;
+                for(const tm of band.items){
+                    const x1=Math.max(0,Math.floor(tm.vx));
+                    const x2=Math.min(Math.ceil(vw2)-1,Math.ceil(tm.vx+(tm.vWidth||0)));
+                    for(let x=x1;x<=x2;x++)cov[x]++;
+                }
+            }
+            // Per-band count: bandCov[x] = how many narrow bands cover pixel x
+            // (each band counted once per pixel, not per item)
+            const bandCov = new Float32Array(Math.ceil(vw2));
+            let narrowBandList=[];
+            for(const band of bands2){
+                let minX=Infinity,maxX=-Infinity;
+                for(const tm of band.items){if(tm.vx<minX)minX=tm.vx;const re=tm.vx+(tm.vWidth||0);if(re>maxX)maxX=re;}
+                if(maxX-minX>vw2*0.55)continue;
+                narrowBandList.push(band);
+                const seen=new Uint8Array(Math.ceil(vw2));
+                for(const tm of band.items){
+                    const x1=Math.max(0,Math.floor(tm.vx));
+                    const x2=Math.min(Math.ceil(vw2)-1,Math.ceil(tm.vx+(tm.vWidth||0)));
+                    for(let x=x1;x<=x2;x++)seen[x]=1;
+                }
+                for(let x=0;x<Math.ceil(vw2);x++)bandCov[x]+=seen[x];
+            }
+            // Find local minimum (gutter): X ranges where bandCov < 20% of narrow bands
+            const nThresh = narrowBandList.length * 0.20;
+            const gaps3=[]; let gs3=null;
+            for(let x=Math.floor(vw2*0.10);x<vw2*0.90;x++){
+                if(bandCov[x]<nThresh){if(gs3===null)gs3=x;}
+                else if(gs3!==null){if(x-gs3>=10)gaps3.push({x:gs3,w:x-gs3,mid:(gs3+x)/2});gs3=null;}
+            }
+            console.log(`  [split-debug p${p}] ${bands2.length} bands: ${narrowBandList.length} narrow, ${wideBands} wide  threshold=${nThresh.toFixed(1)}`);
+            console.log(`  bandCov sample: x=200→${bandCov[200].toFixed(0)} x=400→${bandCov[400].toFixed(0)} x=440→${bandCov[440].toFixed(0)} x=460→${bandCov[460].toFixed(0)} x=473→${bandCov[473].toFixed(0)} x=600→${bandCov[600].toFixed(0)}`);
+            gaps3.sort((a,b)=>b.w-a.w).slice(0,3).forEach(g=>
+                console.log(`  band-gap x=${Math.round(g.x)}–${Math.round(g.x+g.w)} (${Math.round(g.w)}px, bandCov<${nThresh.toFixed(0)}, mid=${Math.round(g.mid)})`));
+        }
+
+        // Dump all regions sorted by yCenter showing columnIndex
+            const sortedAll = [...regions].filter(r=>r.bbox).sort((a,b) => a.yCenter - b.yCenter);
+            console.log(`  [col-trace p${p}] all regions by Y (ci=columnIndex):`);
+            sortedAll.forEach(r => {
+                const ci = r.columnIndex ?? '?';
+                console.log(`    ci=${ci.toString().padStart(2)}  ${r.type.padEnd(9)} x=${Math.round(r.bbox.x).toString().padStart(4)}  w=${Math.round(r.bbox.w).toString().padStart(4)}  items=${r.textItemIndices?.length ?? 0}`);
+            });
+        }
 
         // ── Stream internals trace for sparktoro page 2 ───────────────────────
         if (slug === 'sparktoro' && p === 2) {
