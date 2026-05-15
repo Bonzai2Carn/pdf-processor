@@ -11,16 +11,20 @@
     "textItems": 99,
     "regions": [
       {
-        "type": "HEADING",
-        "items": 1
+        "type": "DIVIDER",
+        "items": 0
       },
       {
-        "type": "HEADING",
-        "items": 1
+        "type": "DIVIDER",
+        "items": 0
       },
       {
-        "type": "HEADING",
-        "items": 1
+        "type": "BOX",
+        "items": 3
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
       },
       {
         "type": "HEADING",
@@ -32,7 +36,47 @@
       },
       {
         "type": "PARAGRAPH",
-        "items": 5
+        "items": 4
+      },
+      {
+        "type": "PARAGRAPH",
+        "items": 36
+      },
+      {
+        "type": "PARAGRAPH",
+        "items": 44
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "IMAGE",
+        "items": 0
+      },
+      {
+        "type": "IMAGE",
+        "items": 0
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "BOX",
+        "items": 1
+      },
+      {
+        "type": "IMAGE",
+        "items": 0
+      },
+      {
+        "type": "IMAGE",
+        "items": 0
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
       },
       {
         "type": "PARAGRAPH",
@@ -44,47 +88,11 @@
       },
       {
         "type": "PARAGRAPH",
-        "items": 64
-      },
-      {
-        "type": "IMAGE",
-        "items": 0
-      },
-      {
-        "type": "IMAGE",
-        "items": 0
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 6
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 5
-      },
-      {
-        "type": "IMAGE",
-        "items": 0
-      },
-      {
-        "type": "IMAGE",
-        "items": 0
-      },
-      {
-        "type": "PARAGRAPH",
         "items": 1
       },
       {
-        "type": "PARAGRAPH",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
+        "type": "DIVIDER",
+        "items": 0
       }
     ]
   },
@@ -100,7 +108,7 @@
     "textItems": 74,
     "regions": [
       {
-        "type": "PARAGRAPH",
+        "type": "HEADER",
         "items": 1
       },
       {
@@ -272,11 +280,15 @@
         "items": 1
       },
       {
-        "type": "PARAGRAPH",
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "FOOTER",
         "items": 1
       },
       {
-        "type": "PARAGRAPH",
+        "type": "FOOTER",
         "items": 1
       }
     ]
@@ -293,7 +305,11 @@
     "textItems": 195,
     "regions": [
       {
-        "type": "PARAGRAPH",
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "HEADER",
         "items": 1
       },
       {
@@ -329,16 +345,8 @@
         "items": 0
       },
       {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 4
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 5
+        "type": "DIVIDER",
+        "items": 0
       },
       {
         "type": "PARAGRAPH",
@@ -346,48 +354,35 @@
       },
       {
         "type": "PARAGRAPH",
-        "items": 4
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 36
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 28
-      },
-      {
-        "type": "TABLE",
-        "items": 9,
-        "rows": 3,
-        "cols": 4,
-        "method": "lattice",
-        "border": true,
-        "conf": "—"
-      },
-      {
-        "type": "HEADING",
-        "items": 1
-      },
-      {
-        "type": "HEADING",
         "items": 2
       },
       {
-        "type": "PARAGRAPH",
-        "items": 1
+        "type": "LATTICE_TABLE",
+        "items": 88
+      },
+      {
+        "type": "BOX",
+        "items": 7
       },
       {
         "type": "PARAGRAPH",
-        "items": 20
+        "items": 14
       },
       {
-        "type": "PARAGRAPH",
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "FOOTER",
         "items": 1
       },
       {
-        "type": "PARAGRAPH",
+        "type": "FOOTER",
         "items": 1
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
       }
     ]
   },
@@ -403,62 +398,16 @@
     "textItems": 243,
     "regions": [
       {
-        "type": "PARAGRAPH",
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "HEADER",
         "items": 1
       },
       {
-        "type": "PARAGRAPH",
-        "items": 3
-      },
-      {
-        "type": "HEADING",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 30
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 9
-      },
-      {
-        "type": "TABLE",
-        "items": 41,
-        "rows": 5,
-        "cols": 18,
-        "method": "lattice",
-        "border": true,
-        "conf": "—"
-      },
-      {
-        "type": "TABLE",
-        "items": 46,
-        "rows": 9,
-        "cols": 11,
-        "method": "lattice",
-        "border": true,
-        "conf": "—"
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 3
+        "type": "LATTICE_TABLE",
+        "items": 150
       },
       {
         "type": "IMAGE",
@@ -466,11 +415,7 @@
       },
       {
         "type": "PARAGRAPH",
-        "items": 11
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 2
+        "items": 13
       },
       {
         "type": "LIST",
@@ -478,19 +423,23 @@
       },
       {
         "type": "PARAGRAPH",
-        "items": 7
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 5
-      },
-      {
-        "type": "PARAGRAPH",
         "items": 1
       },
       {
-        "type": "PARAGRAPH",
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "FOOTER",
         "items": 1
+      },
+      {
+        "type": "FOOTER",
+        "items": 1
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
       }
     ]
   },
@@ -506,6 +455,22 @@
     "textItems": 260,
     "regions": [
       {
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "HEADER",
+        "items": 1
+      },
+      {
+        "type": "LIST",
+        "items": 2
+      },
+      {
+        "type": "BOX",
+        "items": 2
+      },
+      {
         "type": "PARAGRAPH",
         "items": 1
       },
@@ -514,8 +479,20 @@
         "items": 2
       },
       {
-        "type": "HEADING",
-        "items": 3
+        "type": "PARAGRAPH",
+        "items": 1
+      },
+      {
+        "type": "LIST",
+        "items": 2
+      },
+      {
+        "type": "PARAGRAPH",
+        "items": 2
+      },
+      {
+        "type": "BOX",
+        "items": 10
       },
       {
         "type": "LIST",
@@ -527,43 +504,19 @@
       },
       {
         "type": "LIST",
-        "items": 3
-      },
-      {
-        "type": "PARAGRAPH",
         "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 2
-      },
-      {
-        "type": "LIST",
-        "items": 3
       },
       {
         "type": "PARAGRAPH",
         "items": 4
       },
       {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "LIST",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 5
-      },
-      {
         "type": "HEADING",
         "items": 1
       },
       {
-        "type": "PARAGRAPH",
-        "items": 1
+        "type": "DIVIDER",
+        "items": 0
       },
       {
         "type": "LIST",
@@ -602,26 +555,24 @@
         "items": 1
       },
       {
-        "type": "TABLE",
-        "items": 54,
-        "rows": 6,
-        "cols": 7,
-        "method": "lattice",
-        "border": true,
-        "conf": "—"
+        "type": "LATTICE_TABLE",
+        "items": 54
       },
       {
-        "type": "TABLE",
-        "items": 20,
-        "rows": 9,
-        "cols": 9,
-        "method": "lattice",
-        "border": true,
-        "conf": "—"
+        "type": "BOX",
+        "items": 3
+      },
+      {
+        "type": "BOX",
+        "items": 5
+      },
+      {
+        "type": "BOX",
+        "items": 6
       },
       {
         "type": "PARAGRAPH",
-        "items": 2
+        "items": 8
       },
       {
         "type": "LIST",
@@ -636,32 +587,8 @@
         "items": 1
       },
       {
-        "type": "PARAGRAPH",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 4
-      },
-      {
-        "type": "LIST",
-        "items": 3
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 2
+        "type": "DIVIDER",
+        "items": 0
       },
       {
         "type": "PARAGRAPH",
@@ -669,15 +596,31 @@
       },
       {
         "type": "PARAGRAPH",
-        "items": 3
+        "items": 17
       },
       {
-        "type": "PARAGRAPH",
+        "type": "LIST",
         "items": 1
       },
       {
         "type": "PARAGRAPH",
         "items": 1
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "FOOTER",
+        "items": 1
+      },
+      {
+        "type": "FOOTER",
+        "items": 1
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
       }
     ]
   },
@@ -693,8 +636,16 @@
     "textItems": 204,
     "regions": [
       {
-        "type": "PARAGRAPH",
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "HEADER",
         "items": 1
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
       },
       {
         "type": "PARAGRAPH",
@@ -705,29 +656,64 @@
         "items": 14
       },
       {
-        "type": "PARAGRAPH",
-        "items": 2
+        "type": "BOX",
+        "items": 3
+      },
+      {
+        "type": "BOX",
+        "items": 14
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
       },
       {
         "type": "PARAGRAPH",
+        "items": 1
+      },
+      {
+        "type": "BOX",
+        "items": 3
+      },
+      {
+        "type": "BOX",
         "items": 4
       },
       {
-        "type": "TABLE",
-        "items": 65,
-        "rows": 23,
-        "cols": 15,
-        "method": "lattice",
-        "border": true,
-        "conf": "—"
+        "type": "BOX",
+        "items": 4
+      },
+      {
+        "type": "BOX",
+        "items": 3
+      },
+      {
+        "type": "BOX",
+        "items": 6
+      },
+      {
+        "type": "BOX",
+        "items": 10
+      },
+      {
+        "type": "PARAGRAPH",
+        "items": 2
       },
       {
         "type": "HEADING",
         "items": 1
       },
       {
+        "type": "BOX",
+        "items": 9
+      },
+      {
         "type": "PARAGRAPH",
         "items": 15
+      },
+      {
+        "type": "BOX",
+        "items": 2
       },
       {
         "type": "PARAGRAPH",
@@ -748,6 +734,10 @@
       {
         "type": "PARAGRAPH",
         "items": 2
+      },
+      {
+        "type": "BOX",
+        "items": 10
       },
       {
         "type": "LIST",
@@ -782,12 +772,20 @@
         "items": 1
       },
       {
-        "type": "PARAGRAPH",
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "FOOTER",
         "items": 1
       },
       {
-        "type": "PARAGRAPH",
+        "type": "FOOTER",
         "items": 1
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
       }
     ]
   },
@@ -803,28 +801,12 @@
     "textItems": 21,
     "regions": [
       {
-        "type": "HEADING",
-        "items": 1
+        "type": "DIVIDER",
+        "items": 0
       },
       {
         "type": "IMAGE",
         "items": 0
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
       },
       {
         "type": "IMAGE",
@@ -835,17 +817,8 @@
         "items": 0
       },
       {
-        "type": "TABLE",
-        "items": 4,
-        "rows": 4,
-        "cols": 3,
-        "method": "lattice",
-        "border": true,
-        "conf": "—"
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
+        "type": "LATTICE_TABLE",
+        "items": 11
       },
       {
         "type": "IMAGE",
@@ -853,6 +826,10 @@
       },
       {
         "type": "IMAGE",
+        "items": 0
+      },
+      {
+        "type": "DIVIDER",
         "items": 0
       }
     ]
@@ -869,6 +846,10 @@
     "textItems": 130,
     "regions": [
       {
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
         "type": "PARAGRAPH",
         "items": 1
       },
@@ -889,13 +870,8 @@
         "items": 0
       },
       {
-        "type": "TABLE",
-        "items": 66,
-        "rows": 13,
-        "cols": 8,
-        "method": "stream",
-        "border": false,
-        "conf": "0.79"
+        "type": "STREAM_TABLE",
+        "items": 66
       },
       {
         "type": "IMAGE",
@@ -919,6 +895,14 @@
       },
       {
         "type": "IMAGE",
+        "items": 0
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "DIVIDER",
         "items": 0
       },
       {
@@ -926,16 +910,7 @@
         "items": 1
       },
       {
-        "type": "TABLE",
-        "items": 1,
-        "rows": 4,
-        "cols": 4,
-        "method": "lattice",
-        "border": true,
-        "conf": "—"
-      },
-      {
-        "type": "PARAGRAPH",
+        "type": "LATTICE_TABLE",
         "items": 1
       },
       {
@@ -945,10 +920,26 @@
       {
         "type": "PARAGRAPH",
         "items": 1
+      },
+      {
+        "type": "PARAGRAPH",
+        "items": 1
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
       },
       {
         "type": "PARAGRAPH",
         "items": 4
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
       }
     ]
   }

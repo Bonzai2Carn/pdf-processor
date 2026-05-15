@@ -115,7 +115,7 @@ async function processPDF(filePath, slug, label) {
             textItems: textContent.items.length, regions: regionSummary });
 
         // ── Column layout trace for 59MN7C pages 1, 4, 6 ────────────────────
-        if (slug === '59MN7C' && (p === 1 || p === 4 || p === 6)) {
+        if (slug === '59MN7C' && (p === 1 || p === 4 || p === 5 || p === 6)) {
             const vpT2 = viewport.transform;
             const sc2X = Math.hypot(vpT2[0], vpT2[1]) || 1;
             const sc2Y = Math.hypot(vpT2[2], vpT2[3]) || 1;
