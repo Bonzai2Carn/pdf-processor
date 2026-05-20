@@ -15,16 +15,8 @@
         "items": 0
       },
       {
-        "type": "DIVIDER",
-        "items": 0
-      },
-      {
-        "type": "BOX",
+        "type": "LATTICE_TABLE",
         "items": 3
-      },
-      {
-        "type": "DIVIDER",
-        "items": 0
       },
       {
         "type": "HEADING",
@@ -63,7 +55,7 @@
         "items": 0
       },
       {
-        "type": "BOX",
+        "type": "PARAGRAPH",
         "items": 1
       },
       {
@@ -71,11 +63,11 @@
         "items": 0
       },
       {
-        "type": "IMAGE",
+        "type": "LATTICE_TABLE",
         "items": 0
       },
       {
-        "type": "DIVIDER",
+        "type": "IMAGE",
         "items": 0
       },
       {
@@ -354,11 +346,11 @@
       },
       {
         "type": "PARAGRAPH",
-        "items": 2
+        "items": 1
       },
       {
         "type": "LATTICE_TABLE",
-        "items": 88
+        "items": 89
       },
       {
         "type": "BOX",
@@ -406,39 +398,23 @@
         "items": 1
       },
       {
-        "type": "LATTICE_TABLE",
-        "items": 150
-      },
-      {
-        "type": "IMAGE",
-        "items": 0
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 13
-      },
-      {
-        "type": "LIST",
+        "type": "BOX",
         "items": 2
       },
       {
         "type": "PARAGRAPH",
-        "items": 1
+        "items": 14
       },
       {
-        "type": "DIVIDER",
-        "items": 0
+        "type": "BOX",
+        "items": 25
       },
       {
-        "type": "FOOTER",
-        "items": 1
+        "type": "LATTICE_TABLE",
+        "items": 127
       },
       {
-        "type": "FOOTER",
-        "items": 1
-      },
-      {
-        "type": "DIVIDER",
+        "type": "IMAGE",
         "items": 0
       }
     ]
@@ -508,7 +484,7 @@
       },
       {
         "type": "PARAGRAPH",
-        "items": 4
+        "items": 3
       },
       {
         "type": "HEADING",
@@ -519,60 +495,8 @@
         "items": 0
       },
       {
-        "type": "LIST",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 4
-      },
-      {
-        "type": "LIST",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "LIST",
-        "items": 2
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 9
-      },
-      {
-        "type": "LIST",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 6
-      },
-      {
-        "type": "LIST",
-        "items": 1
-      },
-      {
         "type": "LATTICE_TABLE",
-        "items": 54
-      },
-      {
-        "type": "BOX",
-        "items": 3
-      },
-      {
-        "type": "BOX",
-        "items": 5
-      },
-      {
-        "type": "BOX",
-        "items": 6
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 8
+        "items": 105
       },
       {
         "type": "LIST",
@@ -592,19 +516,27 @@
       },
       {
         "type": "PARAGRAPH",
+        "items": 2
+      },
+      {
+        "type": "PARAGRAPH",
+        "items": 9
+      },
+      {
+        "type": "PARAGRAPH",
+        "items": 1
+      },
+      {
+        "type": "LIST",
+        "items": 2
+      },
+      {
+        "type": "PARAGRAPH",
         "items": 6
       },
       {
         "type": "PARAGRAPH",
-        "items": 17
-      },
-      {
-        "type": "LIST",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
+        "items": 5
       },
       {
         "type": "DIVIDER",
@@ -805,8 +737,36 @@
         "items": 0
       },
       {
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "HEADING",
+        "items": 1
+      },
+      {
         "type": "IMAGE",
         "items": 0
+      },
+      {
+        "type": "PARAGRAPH",
+        "items": 2
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "DIVIDER",
+        "items": 0
+      },
+      {
+        "type": "PARAGRAPH",
+        "items": 1
+      },
+      {
+        "type": "PARAGRAPH",
+        "items": 1
       },
       {
         "type": "IMAGE",
@@ -818,7 +778,7 @@
       },
       {
         "type": "LATTICE_TABLE",
-        "items": 11
+        "items": 6
       },
       {
         "type": "IMAGE",
@@ -902,32 +862,8 @@
         "items": 0
       },
       {
-        "type": "DIVIDER",
-        "items": 0
-      },
-      {
-        "type": "HEADING",
-        "items": 1
-      },
-      {
-        "type": "LATTICE_TABLE",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "PARAGRAPH",
-        "items": 1
-      },
-      {
-        "type": "DIVIDER",
-        "items": 0
+        "type": "BOX",
+        "items": 5
       },
       {
         "type": "DIVIDER",
